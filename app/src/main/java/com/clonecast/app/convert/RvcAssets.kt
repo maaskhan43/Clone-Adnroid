@@ -8,9 +8,10 @@ import android.content.Context
  * source of truth — Gate 0 dry-runs push the same file manually.
  */
 object RvcAssets {
-    const val MODEL_DATASET = "clonecast-rvc-model"
+    const val VOICE_DATASET = "clonecast-voice-raw"
     const val INPUT_DATASET = "clonecast-input-audio"
     const val CONVERT_KERNEL = "clonecast-rvc-convert"
+    const val TRAIN_KERNEL = "clonecast-rvc-train"
 
     /**
      * RVC commit the converter is pinned to. This is the commit whose inference
@@ -24,6 +25,10 @@ object RvcAssets {
             .replace("__RUN_ID__", runId)
             .replace("__RVC_COMMIT__", RVC_COMMIT)
             .replace("__INPUT_SHA256__", inputSha256)
+
+    fun trainingScript(context: Context): String =
+        context.assets.open("rvc_train_kernel.py").bufferedReader().use { it.readText() }
+            .replace("__RVC_COMMIT__", RVC_COMMIT)
 
     fun jobJson(runId: String, inputSha256: String, durationMs: Long, fileName: String): String =
         """{"run_id":"$runId","input_sha256":"$inputSha256","duration_ms":$durationMs,"file_name":"$fileName"}"""

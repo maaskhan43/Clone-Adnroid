@@ -3,9 +3,10 @@
 # Pushed by the app (RvcAssets.kt) with __PLACEHOLDERS__ filled in.
 # Gate 0 dry-run pushes this same file manually (see kaggle/README.md).
 #
-# Inputs (Kaggle datasets):
-#   /kaggle/input/clonecast-rvc-model/   model.pth, model.index, hubert_base/, rmvpe.pt
-#   /kaggle/input/clonecast-input-audio/ input audio + job.json
+# Inputs:
+#   model-dataset/ from the clonecast-rvc-train kernel's output (kernelDataSources)
+#     -> model.pth, model.index, hubert_base/, rmvpe.pt
+#   /kaggle/input/clonecast-input-audio/ dataset: input audio + job.json
 # Output:
 #   /kaggle/working/output.mp3           same duration as input
 #   /kaggle/working/job_result.json      status + hashes + durations (written even on failure)
@@ -24,8 +25,24 @@ RUN_ID = "__RUN_ID__"
 RVC_COMMIT = "__RVC_COMMIT__"
 EXPECTED_SHA256 = "__INPUT_SHA256__"
 
-MODEL_DS = "/kaggle/input/clonecast-rvc-model"
 AUDIO_DS = "/kaggle/input/clonecast-input-audio"
+
+
+def find_model_dir():
+    """model-dataset comes from the training kernel's mounted output; the exact
+    mount folder name can vary, so search /kaggle/input for it."""
+    candidates = ["/kaggle/input/clonecast-rvc-train/model-dataset",
+                  "/kaggle/input/clonecast-rvc-model"]
+    for root in sorted(os.listdir("/kaggle/input")):
+        candidates.append(os.path.join("/kaggle/input", root, "model-dataset"))
+    for c in candidates:
+        if os.path.isfile(os.path.join(c, "model.pth")):
+            return c
+    raise RuntimeError(
+        "Trained voice model not found in kernel inputs — run training first")
+
+
+MODEL_DS = None  # resolved in validate_inputs()
 WORK = "/kaggle/working"
 RVC_DIR = os.path.join(WORK, "rvc")
 RVC_REPO = "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI"
@@ -88,10 +105,13 @@ def find_input_audio():
 
 
 def validate_inputs():
+    global MODEL_DS
     if not RUN_ID or RUN_ID.startswith("__"):
         raise RuntimeError("RUN_ID placeholder was not filled in")
     if not RVC_COMMIT or RVC_COMMIT.startswith("__"):
         raise RuntimeError("RVC_COMMIT placeholder was not filled in")
+    MODEL_DS = find_model_dir()
+    log("model dir: %s" % MODEL_DS)
     job_path = os.path.join(AUDIO_DS, "job.json")
     if not os.path.isfile(job_path):
         raise RuntimeError("job.json missing from input dataset")

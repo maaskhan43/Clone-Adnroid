@@ -44,6 +44,94 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+@Composable
+private fun TrainingCard() {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var status by remember { mutableStateOf<String?>(null) }
+    var busy by remember { mutableStateOf(false) }
+    var confirmTrain by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        status = ConvertManager.trainingStatus(context).getOrElse { it.message }
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+    ) {
+        Column(Modifier.padding(12.dp)) {
+            Text("Voice model (one-time)", style = MaterialTheme.typography.labelLarge)
+            Spacer(Modifier.height(4.dp))
+            Text(
+                status ?: "Checking…",
+                style = MaterialTheme.typography.bodySmall,
+                color = if (status?.startsWith("READY") == true) {
+                    MaterialTheme.colorScheme.secondary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+            )
+            Spacer(Modifier.height(8.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (status?.startsWith("READY") != true) {
+                    Button(
+                        onClick = { confirmTrain = true },
+                        enabled = !busy,
+                    ) { Text("Train voice model") }
+                    Spacer(Modifier.width(10.dp))
+                }
+                OutlinedButton(
+                    onClick = {
+                        scope.launch {
+                            busy = true
+                            status = ConvertManager.trainingStatus(context)
+                                .getOrElse { it.message }
+                            busy = false
+                        }
+                    },
+                    enabled = !busy,
+                ) { Text("Refresh") }
+                if (busy) {
+                    Spacer(Modifier.width(10.dp))
+                    CircularProgressIndicator(
+                        modifier = Modifier.width(18.dp).height(18.dp),
+                        strokeWidth = 2.dp,
+                    )
+                }
+            }
+            if (confirmTrain) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Starts a ~1 hour free GPU run on Kaggle using your " +
+                        "clonecast-voice-raw audio. Don't open kaggle.com while it runs.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Spacer(Modifier.height(6.dp))
+                Row {
+                    Button(onClick = {
+                        confirmTrain = false
+                        scope.launch {
+                            busy = true
+                            val result = ConvertManager.startTraining(context)
+                            status = result.fold(
+                                onSuccess = { "Training started — tap Refresh for status (~40-60 min)" },
+                                onFailure = { it.message ?: "Could not start training" },
+                            )
+                            busy = false
+                        }
+                    }) { Text("Start now") }
+                    Spacer(Modifier.width(10.dp))
+                    TextButton(onClick = { confirmTrain = false }) { Text("Cancel") }
+                }
+            }
+        }
+    }
+}
+
 private fun stageLabel(stage: ConvertStage?): String = when (stage) {
     ConvertStage.UPLOADING -> "1/5 Uploading"
     ConvertStage.WAITING_DATASET -> "1/5 Processing upload"
@@ -118,6 +206,9 @@ fun ConvertScreen() {
                     modifier = Modifier.padding(12.dp),
                 )
             }
+            Spacer(Modifier.height(12.dp))
+        } else {
+            TrainingCard()
             Spacer(Modifier.height(12.dp))
         }
 

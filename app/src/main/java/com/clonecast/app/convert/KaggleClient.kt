@@ -246,6 +246,7 @@ object KaggleClient {
         kernelSlug: String,
         scriptText: String,
         datasetSources: List<String>,
+        kernelSources: List<String> = emptyList(),
     ): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             val payload = buildJsonObject {
@@ -259,6 +260,11 @@ object KaggleClient {
                 put("machineShape", "NvidiaTeslaT4")
                 put("datasetDataSources", buildJsonArray {
                     datasetSources.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
+                })
+                // Mounts another kernel's OUTPUT under /kaggle/input/ — used so the
+                // converter reads the training kernel's model without a manual dataset.
+                put("kernelDataSources", buildJsonArray {
+                    kernelSources.forEach { add(kotlinx.serialization.json.JsonPrimitive(it)) }
                 })
             }
             val body = execute(

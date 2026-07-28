@@ -288,16 +288,12 @@ object ConvertManager {
     }
 
     private suspend fun pushKernel(context: Context, creds: KaggleClient.Creds, job: ConvertJob) {
-        // Model dataset must exist (8.1 training). If missing, fail with a clear pointer.
-        val modelStatus = KaggleClient.datasetStatus(creds, RvcAssets.MODEL_DATASET)
-        modelStatus.exceptionOrNull()?.let { error ->
-            if (KaggleClient.isNotFound(error)) {
-                throw IllegalStateException(
-                    "Voice model dataset not found on '${creds.username}'. Run the one-time " +
-                        "training notebook first (kaggle/README.md, Phase 8.1).",
-                )
-            }
-            throw error
+        // The trained model comes from the training kernel's output; verify it exists.
+        if (!isModelReady(creds)) {
+            throw IllegalStateException(
+                "Voice model not trained yet on '${creds.username}' — use the " +
+                    "\"Train voice model\" card first (one-time, ~1 hour).",
+            )
         }
         report(job, ConvertStage.PUSHING, "Starting Kaggle T4 converter…")
         val script = RvcAssets.converterScript(context, job.runId, job.inputSha256)
@@ -305,12 +301,59 @@ object ConvertManager {
             creds,
             RvcAssets.CONVERT_KERNEL,
             script,
-            listOf(
-                "${creds.username}/${RvcAssets.MODEL_DATASET}",
-                "${creds.username}/${RvcAssets.INPUT_DATASET}",
-            ),
+            datasetSources = listOf("${creds.username}/${RvcAssets.INPUT_DATASET}"),
+            kernelSources = listOf("${creds.username}/${RvcAssets.TRAIN_KERNEL}"),
         ).getOrThrow()
         KaggleStore.markBootstrapped(context, creds.username)
+    }
+
+    // --- Voice-model training (Phase 8.7: driven from the phone) ---
+
+    /** True when the training kernel's output contains a trained model. */
+    suspend fun isModelReady(creds: KaggleClient.Creds): Boolean =
+        KaggleClient.kernelOutput(creds, RvcAssets.TRAIN_KERNEL)
+            .getOrDefault(emptyList())
+            .any { it.fileName.endsWith("model.pth") }
+
+    /**
+     * Pushes + starts the one-time training run on Kaggle T4.
+     * Needs the clonecast-voice-raw dataset on the account (voice audio).
+     */
+    suspend fun startTraining(context: Context): Result<Unit> = runCatching {
+        val creds = credsOrThrow(context)
+        val voiceStatus = KaggleClient.datasetStatus(creds, RvcAssets.VOICE_DATASET)
+        voiceStatus.exceptionOrNull()?.let { error ->
+            if (KaggleClient.isNotFound(error)) {
+                throw IllegalStateException(
+                    "Voice dataset '${RvcAssets.VOICE_DATASET}' not found on " +
+                        "'${creds.username}' — upload your voice audio there first.",
+                )
+            }
+            throw error
+        }
+        KaggleClient.pushKernel(
+            creds,
+            RvcAssets.TRAIN_KERNEL,
+            RvcAssets.trainingScript(context),
+            datasetSources = listOf("${creds.username}/${RvcAssets.VOICE_DATASET}"),
+        ).getOrThrow()
+    }
+
+    /** Human-readable status of the training kernel for the Voice-model card. */
+    suspend fun trainingStatus(context: Context): Result<String> = runCatching {
+        val creds = credsOrThrow(context)
+        val state = KaggleClient.kernelStatus(creds, RvcAssets.TRAIN_KERNEL).getOrThrow()
+        when (state.status) {
+            "COMPLETE" ->
+                if (isModelReady(creds)) "READY ✓ — voice model trained, you can convert"
+                else "Finished but no model in output — check the run on kaggle.com"
+            "QUEUED", "NEW_SCRIPT" -> "Waiting for a free Kaggle GPU…"
+            "RUNNING" -> "Training on Kaggle T4… (~40-60 min total)"
+            "ERROR" -> "Training failed: ${state.failureMessage ?: "see kaggle.com log"}"
+            "CANCEL_REQUESTED", "CANCEL_ACKNOWLEDGED" ->
+                "Run was canceled — do NOT open kaggle.com while it runs; tap Train again"
+            else -> state.status
+        }
     }
 
     private suspend fun pollKernel(context: Context, creds: KaggleClient.Creds, job: ConvertJob): String {
