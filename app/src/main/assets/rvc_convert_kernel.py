@@ -25,7 +25,26 @@ RUN_ID = "__RUN_ID__"
 RVC_COMMIT = "__RVC_COMMIT__"
 EXPECTED_SHA256 = "__INPUT_SHA256__"
 
-AUDIO_DS = "/kaggle/input/clonecast-input-audio"
+# With torchvision removed, transformers falls back to TensorFlow/JAX imports,
+# which crash against Kaggle's package soup. Torch only.
+os.environ["USE_TF"] = "0"
+os.environ["USE_FLAX"] = "0"
+
+
+def find_audio_ds():
+    """Locate the mounted input-audio dataset (dir containing job.json)."""
+    candidates = ["/kaggle/input/clonecast-input-audio"]
+    for root, dirs, files in os.walk("/kaggle/input"):
+        if "job.json" in files:
+            candidates.append(root)
+    for c in candidates:
+        if os.path.isfile(os.path.join(c, "job.json")):
+            return c
+    raise RuntimeError("job.json not found anywhere under /kaggle/input — "
+                       "input dataset not mounted")
+
+
+AUDIO_DS = None  # resolved in validate_inputs()
 
 
 def find_model_dir():
@@ -105,11 +124,13 @@ def find_input_audio():
 
 
 def validate_inputs():
-    global MODEL_DS
+    global MODEL_DS, AUDIO_DS
     if not RUN_ID or RUN_ID.startswith("__"):
         raise RuntimeError("RUN_ID placeholder was not filled in")
     if not RVC_COMMIT or RVC_COMMIT.startswith("__"):
         raise RuntimeError("RVC_COMMIT placeholder was not filled in")
+    AUDIO_DS = find_audio_ds()
+    log("audio dir: %s" % AUDIO_DS)
     MODEL_DS = find_model_dir()
     log("model dir: %s" % MODEL_DS)
     job_path = os.path.join(AUDIO_DS, "job.json")

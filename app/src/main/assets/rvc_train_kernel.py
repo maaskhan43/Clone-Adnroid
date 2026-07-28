@@ -23,8 +23,32 @@ SAVE_EVERY = 50
 BATCH = 8
 
 RVC = "/kaggle/working/rvc"
-VOICE_DIR = "/kaggle/input/clonecast-voice-raw"
 EXP_DIR = f"{RVC}/logs/{EXP_NAME}"
+AUDIO_EXT = (".wav", ".mp3", ".m4a", ".flac", ".ogg", ".opus", ".aac")
+
+
+def find_voice_dir():
+    """Locate the mounted voice dataset — mount naming can vary, so search."""
+    root = "/kaggle/input"
+    listing = []
+    for base, dirs, files in os.walk(root):
+        for f in files:
+            listing.append(os.path.join(base, f))
+        if len(listing) > 200:
+            break
+    print("[clonecast-train] /kaggle/input contents:", listing[:50], flush=True)
+    candidates = {}
+    for path in listing:
+        if path.lower().endswith(AUDIO_EXT):
+            candidates.setdefault(os.path.dirname(path), 0)
+            candidates[os.path.dirname(path)] += 1
+    if not candidates:
+        raise RuntimeError(
+            "No audio found anywhere under /kaggle/input — voice dataset not "
+            "mounted. Listing: %s" % listing[:20])
+    best = max(candidates.items(), key=lambda kv: kv[1])[0]
+    print("[clonecast-train] voice dir: %s (%d files)" % (best, candidates[best]), flush=True)
+    return best
 OUT = "/kaggle/working/model-dataset"
 RVC_REPO = "https://github.com/RVC-Project/Retrieval-based-Voice-Conversion-WebUI"
 
@@ -34,6 +58,10 @@ result = {"status": "failed", "rvc_commit": RVC_COMMIT, "epochs": EPOCHS}
 # sys.path where train/train.py shadows the train package (circular import).
 os.environ["PYTHONPATH"] = RVC
 os.environ["PYTHONSAFEPATH"] = "1"
+# With torchvision removed, transformers falls back to TensorFlow/JAX imports,
+# which crash against Kaggle's package soup (pyparsing/numpy pins). Torch only.
+os.environ["USE_TF"] = "0"
+os.environ["USE_FLAX"] = "0"
 
 
 def log(msg):
@@ -93,10 +121,11 @@ def assets():
 
 
 def train():
+    voice_dir = find_voice_dir()
     os.makedirs(EXP_DIR, exist_ok=True)
     ncpu = os.cpu_count() or 4
     # argv per pinned source: inp_root sr n_p exp_dir noparallel per
-    run(f"python train/preprocess.py {VOICE_DIR} 40000 {ncpu} {EXP_DIR} False 3.7", cwd=RVC)
+    run(f"python train/preprocess.py {voice_dir} 40000 {ncpu} {EXP_DIR} False 3.7", cwd=RVC)
     # cuda mode: cuda n_part i_part i_gpu exp_dir is_half
     run(f"python train/dataset/extract_f0.py cuda 1 0 0 {EXP_DIR} True", cwd=RVC)
     # device n_part i_part i_gpu exp_dir version is_half
