@@ -79,17 +79,23 @@ class SamplePlayer {
     val positionMs: Int
         get() = runCatching { player?.currentPosition ?: 0 }.getOrDefault(0)
 
-    fun play(path: String, onComplete: () -> Unit) {
+    /** Returns false if the file could not be played (bad/missing file). */
+    fun play(path: String, onComplete: () -> Unit): Boolean {
         stop()
-        player = MediaPlayer().apply {
-            setDataSource(path)
-            prepare()
-            setOnCompletionListener {
+        val mp = MediaPlayer()
+        return runCatching {
+            mp.setDataSource(path)
+            mp.prepare()
+            mp.setOnCompletionListener {
                 stopInternal()
                 onComplete()
             }
-            start()
-        }
+            mp.start()
+            player = mp
+        }.onFailure {
+            runCatching { mp.release() }
+            onComplete()
+        }.isSuccess
     }
 
     fun stop() = stopInternal()

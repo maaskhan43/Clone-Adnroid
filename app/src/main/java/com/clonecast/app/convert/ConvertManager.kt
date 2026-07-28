@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -116,18 +117,23 @@ object ConvertManager {
 
     /** Local cancel: stops driving the job. A kernel already pushed keeps running on Kaggle. */
     suspend fun cancel(context: Context) {
-        activeWork?.cancel()
-        activeWork = null
-        val job = KaggleStore.currentJobs(context).firstOrNull { !it.stage.isTerminal } ?: return
-        persist(
-            context,
-            job.copy(
-                stage = ConvertStage.CANCELED,
-                error = "Canceled from the app. If the Kaggle run already started it " +
-                    "will still finish there and count against quota.",
-            ),
-        )
-        _progress.value = ConvertProgress(job.runId, ConvertStage.CANCELED, "Canceled")
+        // Same lock as start()/resume(): otherwise a concurrent resume() can observe
+        // the job still non-terminal and relaunch a duplicate state machine.
+        startLock.withLock {
+            activeWork?.cancelAndJoin()
+            activeWork = null
+            val job = KaggleStore.currentJobs(context).firstOrNull { !it.stage.isTerminal }
+                ?: return@withLock
+            persist(
+                context,
+                job.copy(
+                    stage = ConvertStage.CANCELED,
+                    error = "Canceled from the app. If the Kaggle run already started it " +
+                        "will still finish there and count against quota.",
+                ),
+            )
+            _progress.value = ConvertProgress(job.runId, ConvertStage.CANCELED, "Canceled")
+        }
     }
 
     private suspend fun credsOrThrow(context: Context): KaggleClient.Creds {
@@ -170,7 +176,10 @@ object ConvertManager {
                     val status = pollKernel(context, creds, job)
                     job = persist(context, job.copy(stage = ConvertStage.DOWNLOADING, kaggleStatus = status))
                 }
-                if (job.stage == ConvertStage.DOWNLOADING) {
+                // SAVING included: process death between the SAVING persist and the
+                // MediaStore write would otherwise leave the job stuck forever.
+                // downloadOutput is idempotent (re-download + sha/run_id checks).
+                if (job.stage == ConvertStage.DOWNLOADING || job.stage == ConvertStage.SAVING) {
                     val mp3 = downloadOutput(context, creds, job)
                     job = persist(context, job.copy(stage = ConvertStage.SAVING))
                     val uri = saveToMusic(context, job.title, mp3)

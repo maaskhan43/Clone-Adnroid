@@ -191,10 +191,12 @@ fun DubScreen() {
                         withContext(Dispatchers.IO) { copyPickedAudio(context, uri) }
                     } else {
                         stage = DubStage.EXTRACTING
-                        val out = File(context.cacheDir, "dub_audio.m4a")
-                        out.delete()
-                        AudioExtractor.extractToM4a(context, uri, out)
-                        out
+                        withContext(Dispatchers.IO) {
+                            val out = File(context.cacheDir, "dub_audio.m4a")
+                            out.delete()
+                            AudioExtractor.extractToM4a(context, uri, out)
+                            out
+                        }
                     }
                 if (audioFile.length() > 25L * 1024 * 1024) {
                     throw IllegalStateException(

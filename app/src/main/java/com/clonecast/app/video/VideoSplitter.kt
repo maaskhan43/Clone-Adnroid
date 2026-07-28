@@ -42,6 +42,8 @@ object VideoSplitter {
             retriever.setDataSource(context, uri)
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
                 ?.toLongOrNull() ?: 0L
+        } catch (_: Exception) {
+            0L
         } finally {
             runCatching { retriever.release() }
         }
