@@ -106,6 +106,18 @@ def assets():
     run("pip install -q huggingface_hub")
     from huggingface_hub import snapshot_download, hf_hub_download
     snapshot_download("lengyue233/content-vec-best", local_dir="/kaggle/working/hubert_base")
+    preprocessor_config = "/kaggle/working/hubert_base/preprocessor_config.json"
+    if not os.path.isfile(preprocessor_config):
+        with open(preprocessor_config, "w", encoding="utf-8") as f:
+            json.dump({
+                "do_normalize": False,
+                "feature_extractor_type": "Wav2Vec2FeatureExtractor",
+                "feature_size": 1,
+                "padding_side": "right",
+                "padding_value": 0.0,
+                "return_attention_mask": False,
+                "sampling_rate": 16000,
+            }, f, indent=2, sort_keys=True)
     os.makedirs(f"{RVC}/assets/rmvpe", exist_ok=True)
     os.makedirs(f"{RVC}/assets/pretrained_v2", exist_ok=True)
     os.makedirs(f"{RVC}/assets/weights", exist_ok=True)
