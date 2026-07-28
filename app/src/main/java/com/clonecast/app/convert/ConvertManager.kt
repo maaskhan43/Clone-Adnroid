@@ -185,7 +185,14 @@ object ConvertManager {
                     // Idempotent save: drop any export left from a previous attempt
                     // (pending or finalized) so a resume never duplicates the file.
                     job.pendingOutputUri?.let { stale ->
+                        // Clear the pointer only after the stale row is really gone —
+                        // otherwise a failed delete orphans it and the retry duplicates.
                         runCatching { context.contentResolver.delete(Uri.parse(stale), null, null) }
+                            .getOrElse {
+                                throw IllegalStateException(
+                                    "Could not clean up the previous export — retry the conversion",
+                                )
+                            }
                         job = persist(context, job.copy(pendingOutputUri = null))
                     }
                     val uri = if (Build.VERSION.SDK_INT >= 29) {
@@ -194,8 +201,8 @@ object ConvertManager {
                         finalizePendingAudio(context, pending, mp3)
                         pending
                     } else {
-                        // Pre-29 writes to a fixed file path — overwrite is already idempotent.
-                        saveToMusicLegacy(context, job.title, mp3)
+                        // Pre-29: per-run file path — retries reuse it, separate runs never collide.
+                        saveToMusicLegacy(context, job.title, job.runId, mp3)
                     }
                     mp3.delete()
                     File(job.inputPath).delete()
@@ -395,14 +402,19 @@ object ConvertManager {
             mp3.inputStream().use { it.copyTo(out) }
         }
         val values = ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) }
-        resolver.update(uri, values, null, null)
+        val updated = resolver.update(uri, values, null, null)
+        if (updated != 1) {
+            // File would stay invisible (still pending) while the job claims DONE.
+            throw IllegalStateException("Could not finalize the export — retry the conversion")
+        }
     }
 
-    /** Pre-29: fixed path in app-external storage; overwriting the same file is idempotent. */
-    private fun saveToMusicLegacy(context: Context, title: String, mp3: File): Uri {
+    /** Pre-29: per-run path in app-external storage — retry overwrites, runs never collide. */
+    private fun saveToMusicLegacy(context: Context, title: String, runId: String, mp3: File): Uri {
         val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CloneCast")
             .apply { mkdirs() }
-        val out = File(dir, safeFileName(title))
+        val base = safeFileName(title).removeSuffix(".mp3")
+        val out = File(dir, "$base-${runId.take(8)}.mp3")
         mp3.inputStream().use { input -> out.outputStream().use { input.copyTo(it) } }
         return FileProvider.getUriForFile(context, context.packageName + ".fileprovider", out)
     }
