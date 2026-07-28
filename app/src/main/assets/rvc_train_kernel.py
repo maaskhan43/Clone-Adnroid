@@ -73,6 +73,27 @@ def run(cmd, cwd=None):
     subprocess.run(cmd, shell=True, check=True, cwd=cwd)
 
 
+def patch_rvc_source():
+    train_py = f"{RVC}/train/train.py"
+    source = open(train_py, encoding="utf-8").read()
+    target = "from torch.utils.tensorboard import SummaryWriter"
+    replacement = """class SummaryWriter:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        def _noop(*args, **kwargs):
+            return None
+        return _noop
+"""
+    if target not in source:
+        raise RuntimeError("SummaryWriter import target missing in pinned RVC train.py")
+    source = source.replace(target, replacement, 1)
+    with open(train_py, "w", encoding="utf-8") as f:
+        f.write(source)
+    log("patched train.py TensorBoard writer")
+
+
 def write_result():
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "train_result.json"), "w") as f:
@@ -88,6 +109,7 @@ def install():
     run("pip uninstall -q -y torchvision")
     run(f"git clone {RVC_REPO} {RVC}")
     run(f"git -C {RVC} checkout {RVC_COMMIT}")
+    patch_rvc_source()
     req = open(f"{RVC}/requirments_cu128_py312.txt").read().splitlines()
     with open("/kaggle/working/req.txt", "w") as f:
         f.write("\n".join(l for l in req if not l.strip().startswith("--index-url")))
