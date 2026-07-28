@@ -1,0 +1,413 @@
+package com.clonecast.app.convert
+
+import android.content.ContentValues
+import android.content.Context
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import androidx.core.content.FileProvider
+import com.clonecast.app.data.ConvertJob
+import com.clonecast.app.data.ConvertStage
+import com.clonecast.app.data.KaggleStore
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import java.io.File
+import java.security.MessageDigest
+import java.util.UUID
+
+/** Live progress the Convert screen renders. */
+data class ConvertProgress(
+    val runId: String? = null,
+    val stage: ConvertStage? = null,
+    val detail: String = "",
+    val fraction: Float? = null,
+)
+
+/**
+ * Resumable conversion state machine (plan section 3):
+ * UPLOADING -> WAITING_DATASET -> PUSHING -> RUNNING -> DOWNLOADING -> SAVING -> DONE.
+ *
+ * Single-flight: fixed clonecast-* slugs mean only ONE active job per account
+ * (guardrail 5). A Mutex guards starts; extra requests are rejected with a
+ * clear message instead of silently overwriting the active run.
+ *
+ * The heavy work happens on Kaggle, so process death is safe: every stage
+ * transition is persisted, and resume() continues from the saved stage.
+ */
+object ConvertManager {
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private val startLock = Mutex()
+    private var activeWork: Job? = null
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val _progress = MutableStateFlow(ConvertProgress())
+    val progress: StateFlow<ConvertProgress> = _progress
+
+    private const val POLL_INTERVAL_MS = 30_000L
+    private const val DATASET_TIMEOUT_MS = 10 * 60_000L
+    private const val KERNEL_TIMEOUT_MS = 120 * 60_000L
+
+    /** Copies the picked audio into app storage and starts (or rejects) a job. */
+    suspend fun start(context: Context, sourceUri: Uri, title: String): Result<String> =
+        startLock.withLock {
+            runCatching {
+                val jobs = KaggleStore.currentJobs(context)
+                jobs.firstOrNull { !it.stage.isTerminal }?.let {
+                    throw IllegalStateException(
+                        "A conversion is already running (${it.title}). " +
+                            "Wait for it to finish — one at a time keeps Kaggle runs safe.",
+                    )
+                }
+                val creds = credsOrThrow(context)
+                val runId = UUID.randomUUID().toString().replace("-", "").take(16)
+
+                val dir = File(context.filesDir, "convert").apply { mkdirs() }
+                val ext = context.contentResolver.getType(sourceUri)
+                    ?.substringAfterLast('/')?.takeIf { it.length in 2..4 } ?: "m4a"
+                val input = File(dir, "input_$runId.$ext")
+                context.contentResolver.openInputStream(sourceUri)?.use { stream ->
+                    input.outputStream().use { stream.copyTo(it) }
+                } ?: throw IllegalStateException("Could not read the selected audio file")
+
+                val durationMs = audioDurationMs(input)
+                if (durationMs < 1_000) throw IllegalStateException("Audio too short or unreadable")
+
+                val job = ConvertJob(
+                    runId = runId,
+                    title = title.ifBlank { "narration" },
+                    inputPath = input.absolutePath,
+                    inputSha256 = sha256(input),
+                    inputDurationMs = durationMs,
+                    kaggleUser = creds.username,
+                    createdAt = System.currentTimeMillis(),
+                    updatedAt = System.currentTimeMillis(),
+                )
+                KaggleStore.upsertJob(context, job)
+                launchStateMachine(context, job)
+                runId
+            }
+        }
+
+    /** Continues a non-terminal job after app restart. No-op when nothing to resume. */
+    fun resume(context: Context) {
+        scope.launch {
+            startLock.withLock {
+                if (activeWork?.isActive == true) return@withLock
+                val job = KaggleStore.currentJobs(context).firstOrNull { !it.stage.isTerminal }
+                    ?: return@withLock
+                launchStateMachine(context, job)
+            }
+        }
+    }
+
+    /** Local cancel: stops driving the job. A kernel already pushed keeps running on Kaggle. */
+    suspend fun cancel(context: Context) {
+        activeWork?.cancel()
+        activeWork = null
+        val job = KaggleStore.currentJobs(context).firstOrNull { !it.stage.isTerminal } ?: return
+        persist(
+            context,
+            job.copy(
+                stage = ConvertStage.CANCELED,
+                error = "Canceled from the app. If the Kaggle run already started it " +
+                    "will still finish there and count against quota.",
+            ),
+        )
+        _progress.value = ConvertProgress(job.runId, ConvertStage.CANCELED, "Canceled")
+    }
+
+    private suspend fun credsOrThrow(context: Context): KaggleClient.Creds {
+        val username = KaggleStore.usernameFlow(context).first()
+        val apiKey = KaggleStore.apiKeyFlow(context).first()
+        if (username.isBlank() || apiKey.isBlank()) {
+            throw IllegalStateException("Add your Kaggle username & API key in Settings first")
+        }
+        return KaggleClient.Creds(username, apiKey)
+    }
+
+    private fun launchStateMachine(context: Context, startJob: ConvertJob) {
+        activeWork = scope.launch {
+            var job = startJob
+            try {
+                val creds = credsOrThrow(context)
+                if (creds.username != job.kaggleUser) {
+                    throw IllegalStateException(
+                        "This job belongs to Kaggle account '${job.kaggleUser}' but " +
+                            "Settings now has '${creds.username}'. Cancel it and start again.",
+                    )
+                }
+                // Stages before PUSHING restart from UPLOADING (blob tokens are not
+                // resumable); PUSHING onward resumes in place — the kernel is the
+                // durable state on Kaggle's side.
+                if (job.stage == ConvertStage.WAITING_DATASET) {
+                    job = persist(context, job.copy(stage = ConvertStage.UPLOADING))
+                }
+                if (job.stage == ConvertStage.UPLOADING) {
+                    uploadInput(context, creds, job)
+                    job = persist(context, job.copy(stage = ConvertStage.WAITING_DATASET))
+                    waitDatasetReady(creds, job)
+                    job = persist(context, job.copy(stage = ConvertStage.PUSHING))
+                }
+                if (job.stage == ConvertStage.PUSHING) {
+                    pushKernel(context, creds, job)
+                    job = persist(context, job.copy(stage = ConvertStage.RUNNING))
+                }
+                if (job.stage == ConvertStage.RUNNING) {
+                    val status = pollKernel(context, creds, job)
+                    job = persist(context, job.copy(stage = ConvertStage.DOWNLOADING, kaggleStatus = status))
+                }
+                if (job.stage == ConvertStage.DOWNLOADING) {
+                    val mp3 = downloadOutput(context, creds, job)
+                    job = persist(context, job.copy(stage = ConvertStage.SAVING))
+                    val uri = saveToMusic(context, job.title, mp3)
+                    mp3.delete()
+                    File(job.inputPath).delete()
+                    job = persist(
+                        context,
+                        job.copy(stage = ConvertStage.DONE, outputUri = uri.toString()),
+                    )
+                    _progress.value = ConvertProgress(job.runId, ConvertStage.DONE, "Saved to Music/CloneCast")
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val message = e.message ?: "Conversion failed"
+                persist(context, job.copy(stage = ConvertStage.ERROR, error = message))
+                _progress.value = ConvertProgress(job.runId, ConvertStage.ERROR, message)
+            }
+        }
+    }
+
+    private suspend fun persist(context: Context, job: ConvertJob): ConvertJob {
+        val updated = job.copy(updatedAt = System.currentTimeMillis())
+        KaggleStore.upsertJob(context, updated)
+        return updated
+    }
+
+    private fun report(job: ConvertJob, stage: ConvertStage, detail: String, fraction: Float? = null) {
+        _progress.value = ConvertProgress(job.runId, stage, detail, fraction)
+    }
+
+    // --- Stage implementations ---
+
+    private suspend fun uploadInput(context: Context, creds: KaggleClient.Creds, job: ConvertJob) {
+        val input = File(job.inputPath)
+        if (!input.isFile) throw IllegalStateException("Input file lost — start the conversion again")
+        report(job, ConvertStage.UPLOADING, "Uploading audio (${input.length() / 1_048_576} MB)…", 0f)
+
+        val audioToken = KaggleClient.uploadBlob(creds, input, audioMime(input)) { f ->
+            report(job, ConvertStage.UPLOADING, "Uploading audio…", f)
+        }.getOrThrow()
+
+        val jobFile = File(context.cacheDir, "job.json").apply {
+            writeText(RvcAssets.jobJson(job.runId, job.inputSha256, job.inputDurationMs, input.name))
+        }
+        val jobToken = KaggleClient.uploadBlob(creds, jobFile, "application/json").getOrThrow()
+        jobFile.delete()
+
+        report(job, ConvertStage.UPLOADING, "Creating dataset version…")
+        val tokens = listOf(audioToken, jobToken)
+        val version = KaggleClient.versionDataset(
+            creds, RvcAssets.INPUT_DATASET, "run ${job.runId}", tokens,
+        )
+        version.exceptionOrNull()?.let { error ->
+            if (KaggleClient.isNotFound(error)) {
+                // First run on this account: create the dataset instead.
+                KaggleClient.createDataset(
+                    creds, RvcAssets.INPUT_DATASET, "CloneCast Input Audio", tokens,
+                ).getOrThrow()
+            } else {
+                throw error
+            }
+        }
+    }
+
+    private suspend fun waitDatasetReady(creds: KaggleClient.Creds, job: ConvertJob) {
+        val deadline = System.currentTimeMillis() + DATASET_TIMEOUT_MS
+        while (true) {
+            report(job, ConvertStage.WAITING_DATASET, "Waiting for Kaggle to process the upload…")
+            val status = KaggleClient.datasetStatus(creds, RvcAssets.INPUT_DATASET).getOrThrow()
+            when {
+                status.contains("READY") -> return
+                status.contains("FAILED") || status.contains("DELETED") ->
+                    throw IllegalStateException("Kaggle could not process the upload ($status) — retry")
+            }
+            if (System.currentTimeMillis() > deadline) {
+                throw IllegalStateException("Upload processing timed out — retry the conversion")
+            }
+            delay(10_000)
+        }
+    }
+
+    private suspend fun pushKernel(context: Context, creds: KaggleClient.Creds, job: ConvertJob) {
+        // Model dataset must exist (8.1 training). If missing, fail with a clear pointer.
+        val modelStatus = KaggleClient.datasetStatus(creds, RvcAssets.MODEL_DATASET)
+        modelStatus.exceptionOrNull()?.let { error ->
+            if (KaggleClient.isNotFound(error)) {
+                throw IllegalStateException(
+                    "Voice model dataset not found on '${creds.username}'. Run the one-time " +
+                        "training notebook first (kaggle/README.md, Phase 8.1).",
+                )
+            }
+            throw error
+        }
+        report(job, ConvertStage.PUSHING, "Starting Kaggle T4 converter…")
+        val script = RvcAssets.converterScript(context, job.runId, job.inputSha256)
+        KaggleClient.pushKernel(
+            creds,
+            RvcAssets.CONVERT_KERNEL,
+            script,
+            listOf(
+                "${creds.username}/${RvcAssets.MODEL_DATASET}",
+                "${creds.username}/${RvcAssets.INPUT_DATASET}",
+            ),
+        ).getOrThrow()
+        KaggleStore.markBootstrapped(context, creds.username)
+    }
+
+    private suspend fun pollKernel(context: Context, creds: KaggleClient.Creds, job: ConvertJob): String {
+        val deadline = System.currentTimeMillis() + KERNEL_TIMEOUT_MS
+        while (true) {
+            val state = KaggleClient.kernelStatus(creds, RvcAssets.CONVERT_KERNEL).getOrThrow()
+            when (state.status) {
+                "COMPLETE" -> return state.status
+                "ERROR" -> throw IllegalStateException(
+                    "Kaggle run failed: ${state.failureMessage ?: "see kernel log on kaggle.com"}",
+                )
+                "CANCEL_REQUESTED", "CANCEL_ACKNOWLEDGED" ->
+                    throw IllegalStateException("Kaggle run was canceled on the website")
+                "QUEUED", "NEW_SCRIPT" ->
+                    report(job, ConvertStage.RUNNING, "Waiting for a free Kaggle GPU… (can take a few minutes)")
+                else ->
+                    report(job, ConvertStage.RUNNING, "Converting on Kaggle T4… (installs + convert, ~10-20 min)")
+            }
+            if (System.currentTimeMillis() > deadline) {
+                throw IllegalStateException("Kaggle run timed out after 2 hours — check kaggle.com")
+            }
+            delay(POLL_INTERVAL_MS)
+        }
+    }
+
+    private suspend fun downloadOutput(context: Context, creds: KaggleClient.Creds, job: ConvertJob): File {
+        report(job, ConvertStage.DOWNLOADING, "Fetching converted audio…", 0f)
+        val files = KaggleClient.kernelOutput(creds, RvcAssets.CONVERT_KERNEL).getOrThrow()
+
+        val resultMeta = files.firstOrNull { it.fileName.endsWith("job_result.json") }
+            ?: throw IllegalStateException("job_result.json missing from Kaggle output")
+        val resultFile = File(context.cacheDir, "job_result.json")
+        KaggleClient.downloadFile(creds, resultMeta.url, resultFile).getOrThrow()
+        val result = json.parseToJsonElement(resultFile.readText()).jsonObject
+        resultFile.delete()
+
+        val resultRunId = result["run_id"]?.jsonPrimitive?.content
+        if (resultRunId != job.runId) {
+            throw IllegalStateException(
+                "Kaggle output belongs to a different run ($resultRunId) — retry the conversion",
+            )
+        }
+        if (result["status"]?.jsonPrimitive?.content != "ok") {
+            val error = result["error"]?.jsonPrimitive?.content ?: "unknown kernel error"
+            throw IllegalStateException("Conversion failed on Kaggle: ${error.take(300)}")
+        }
+        if (result["input_sha256"]?.jsonPrimitive?.content != job.inputSha256) {
+            throw IllegalStateException("Kaggle converted a different input file — retry")
+        }
+
+        val mp3Meta = files.firstOrNull { it.fileName.endsWith("output.mp3") }
+            ?: throw IllegalStateException("output.mp3 missing from Kaggle output")
+        val mp3 = File(context.cacheDir, "converted_${job.runId}.mp3")
+        KaggleClient.downloadFile(creds, mp3Meta.url, mp3) { f ->
+            report(job, ConvertStage.DOWNLOADING, "Downloading converted audio…", f)
+        }.getOrThrow()
+        if (mp3.length() == 0L) throw IllegalStateException("Downloaded file is empty — retry")
+
+        val outMs = audioDurationMs(mp3)
+        if (kotlin.math.abs(outMs - job.inputDurationMs) > 1_000) {
+            mp3.delete()
+            throw IllegalStateException(
+                "Duration check failed (in ${job.inputDurationMs / 1000}s, out ${outMs / 1000}s)",
+            )
+        }
+        return mp3
+    }
+
+    /** Saves like AudioExport.exportToMusic, but from a ready-made file. */
+    private fun saveToMusic(context: Context, title: String, mp3: File): Uri {
+        val safeName = title.replace(Regex("[^A-Za-z0-9 _-]"), "").trim().ifBlank { "converted" }
+        val fileName = "$safeName.mp3"
+        return if (Build.VERSION.SDK_INT >= 29) {
+            val values = ContentValues().apply {
+                put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
+                put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg")
+                put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/CloneCast")
+                put(MediaStore.Audio.Media.IS_PENDING, 1)
+            }
+            val resolver = context.contentResolver
+            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
+                ?: throw IllegalStateException("Could not create file in Music folder")
+            resolver.openOutputStream(uri).use { out ->
+                if (out == null) throw IllegalStateException("Could not open output file")
+                mp3.inputStream().use { it.copyTo(out) }
+            }
+            values.clear()
+            values.put(MediaStore.Audio.Media.IS_PENDING, 0)
+            resolver.update(uri, values, null, null)
+            uri
+        } else {
+            val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CloneCast")
+                .apply { mkdirs() }
+            val out = File(dir, fileName)
+            mp3.inputStream().use { input -> out.outputStream().use { input.copyTo(it) } }
+            FileProvider.getUriForFile(context, context.packageName + ".fileprovider", out)
+        }
+    }
+
+    // --- Helpers ---
+
+    private fun sha256(file: File): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(1 shl 16)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                digest.update(buffer, 0, read)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
+
+    private fun audioDurationMs(file: File): Long {
+        // MediaMetadataRetriever.close() needs API 29; release() works on minSdk 26.
+        val retriever = MediaMetadataRetriever()
+        return try {
+            retriever.setDataSource(file.absolutePath)
+            retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+                ?.toLongOrNull() ?: 0L
+        } finally {
+            retriever.release()
+        }
+    }
+
+    private fun audioMime(file: File): String = when (file.extension.lowercase()) {
+        "mp3", "mpeg" -> "audio/mpeg"
+        "wav" -> "audio/wav"
+        "ogg", "opus" -> "audio/ogg"
+        "flac" -> "audio/flac"
+        else -> "audio/mp4"
+    }
+}
