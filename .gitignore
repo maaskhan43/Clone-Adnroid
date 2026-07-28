@@ -1,0 +1,29 @@
+# Build junk
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+.idea/
+*.apk
+
+# Signing keys — never commit
+keystore/
+*.jks
+*.keystore
+kaggle.json
+
+# Dubbing / LatentSync pipeline (separate repo — not part of the Android app)
+kaggle_latentsync_push/
+kaggle_latentsync_v9/
+kaggle_latentsync_v9_diagnostics/
+kaggle_latentsync_v9_result/
+kaggle_latentsync_v11_outputs/
+kaggle_resource_probe/
+kaggle_resource_probe_result/
+LatentSync_source_audit/
+pilot_dataset_reference/
+V10_PLAN.md
+
+# Stray artifacts
+=4.0,
