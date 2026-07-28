@@ -27,3 +27,6 @@ V10_PLAN.md
 
 # Stray artifacts
 =4.0,
+
+# Dubbing helper scripts (separate project)
+tools/
