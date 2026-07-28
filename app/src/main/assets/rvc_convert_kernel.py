@@ -123,6 +123,9 @@ def install_stack():
     run([sys.executable, "-m", "pip", "install", "-q",
          "torch==2.7.1", "torchaudio==2.7.1",
          "--index-url", "https://download.pytorch.org/whl/cu128"])
+    # Kaggle's preinstalled torchvision targets a newer torch; with 2.7.1 it
+    # breaks transformers' import (torchvision::nms). RVC never uses it.
+    run([sys.executable, "-m", "pip", "uninstall", "-q", "-y", "torchvision"])
     run(["git", "clone", RVC_REPO, RVC_DIR])
     run(["git", "-C", RVC_DIR, "checkout", RVC_COMMIT])
     # RVC's own py312 requirements, minus their mirror index lines; numpy<2 constrained.
