@@ -182,12 +182,30 @@ object ConvertManager {
                 if (job.stage == ConvertStage.DOWNLOADING || job.stage == ConvertStage.SAVING) {
                     val mp3 = downloadOutput(context, creds, job)
                     job = persist(context, job.copy(stage = ConvertStage.SAVING))
-                    val uri = saveToMusic(context, job.title, mp3)
+                    // Idempotent save: drop any export left from a previous attempt
+                    // (pending or finalized) so a resume never duplicates the file.
+                    job.pendingOutputUri?.let { stale ->
+                        runCatching { context.contentResolver.delete(Uri.parse(stale), null, null) }
+                        job = persist(context, job.copy(pendingOutputUri = null))
+                    }
+                    val uri = if (Build.VERSION.SDK_INT >= 29) {
+                        val pending = createPendingAudio(context, job.title)
+                        job = persist(context, job.copy(pendingOutputUri = pending.toString()))
+                        finalizePendingAudio(context, pending, mp3)
+                        pending
+                    } else {
+                        // Pre-29 writes to a fixed file path — overwrite is already idempotent.
+                        saveToMusicLegacy(context, job.title, mp3)
+                    }
                     mp3.delete()
                     File(job.inputPath).delete()
                     job = persist(
                         context,
-                        job.copy(stage = ConvertStage.DONE, outputUri = uri.toString()),
+                        job.copy(
+                            stage = ConvertStage.DONE,
+                            outputUri = uri.toString(),
+                            pendingOutputUri = null,
+                        ),
                     )
                     _progress.value = ConvertProgress(job.runId, ConvertStage.DONE, "Saved to Music/CloneCast")
                 }
@@ -354,35 +372,39 @@ object ConvertManager {
         return mp3
     }
 
-    /** Saves like AudioExport.exportToMusic, but from a ready-made file. */
-    private fun saveToMusic(context: Context, title: String, mp3: File): Uri {
-        val safeName = title.replace(Regex("[^A-Za-z0-9 _-]"), "").trim().ifBlank { "converted" }
-        val fileName = "$safeName.mp3"
-        return if (Build.VERSION.SDK_INT >= 29) {
-            val values = ContentValues().apply {
-                put(MediaStore.Audio.Media.DISPLAY_NAME, fileName)
-                put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg")
-                put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/CloneCast")
-                put(MediaStore.Audio.Media.IS_PENDING, 1)
-            }
-            val resolver = context.contentResolver
-            val uri = resolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
-                ?: throw IllegalStateException("Could not create file in Music folder")
-            resolver.openOutputStream(uri).use { out ->
-                if (out == null) throw IllegalStateException("Could not open output file")
-                mp3.inputStream().use { it.copyTo(out) }
-            }
-            values.clear()
-            values.put(MediaStore.Audio.Media.IS_PENDING, 0)
-            resolver.update(uri, values, null, null)
-            uri
-        } else {
-            val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CloneCast")
-                .apply { mkdirs() }
-            val out = File(dir, fileName)
-            mp3.inputStream().use { input -> out.outputStream().use { input.copyTo(it) } }
-            FileProvider.getUriForFile(context, context.packageName + ".fileprovider", out)
+    private fun safeFileName(title: String): String =
+        title.replace(Regex("[^A-Za-z0-9 _-]"), "").trim().ifBlank { "converted" } + ".mp3"
+
+    /** Phase 1 (API 29+): insert an invisible IS_PENDING row; its URI is persisted before writing. */
+    private fun createPendingAudio(context: Context, title: String): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.Audio.Media.DISPLAY_NAME, safeFileName(title))
+            put(MediaStore.Audio.Media.MIME_TYPE, "audio/mpeg")
+            put(MediaStore.Audio.Media.RELATIVE_PATH, Environment.DIRECTORY_MUSIC + "/CloneCast")
+            put(MediaStore.Audio.Media.IS_PENDING, 1)
         }
+        return context.contentResolver.insert(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IllegalStateException("Could not create file in Music folder")
+    }
+
+    /** Phase 2 (API 29+): write the bytes and flip IS_PENDING off. */
+    private fun finalizePendingAudio(context: Context, uri: Uri, mp3: File) {
+        val resolver = context.contentResolver
+        resolver.openOutputStream(uri).use { out ->
+            if (out == null) throw IllegalStateException("Could not open output file")
+            mp3.inputStream().use { it.copyTo(out) }
+        }
+        val values = ContentValues().apply { put(MediaStore.Audio.Media.IS_PENDING, 0) }
+        resolver.update(uri, values, null, null)
+    }
+
+    /** Pre-29: fixed path in app-external storage; overwriting the same file is idempotent. */
+    private fun saveToMusicLegacy(context: Context, title: String, mp3: File): Uri {
+        val dir = File(context.getExternalFilesDir(Environment.DIRECTORY_MUSIC), "CloneCast")
+            .apply { mkdirs() }
+        val out = File(dir, safeFileName(title))
+        mp3.inputStream().use { input -> out.outputStream().use { input.copyTo(it) } }
+        return FileProvider.getUriForFile(context, context.packageName + ".fileprovider", out)
     }
 
     // --- Helpers ---

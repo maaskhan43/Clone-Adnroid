@@ -42,6 +42,8 @@ data class ConvertJob(
     val kaggleUser: String,
     val error: String? = null,
     val outputUri: String? = null,
+    /** MediaStore IS_PENDING row from an in-flight save — deleted on resume so re-saves never duplicate. */
+    val pendingOutputUri: String? = null,
     val kaggleStatus: String? = null,
     val createdAt: Long,
     val updatedAt: Long,
