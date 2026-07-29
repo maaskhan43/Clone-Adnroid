@@ -286,7 +286,7 @@ def main():
           % (len(blocks), sum(1 for b in blocks if b["target_text_hi"]), len(flags), outdir))
     for f in flags:
         print("  - %s" % f)
-    return 0
+    return 1 if flags else 0
 
 
 if __name__ == "__main__":
