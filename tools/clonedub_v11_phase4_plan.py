@@ -104,8 +104,10 @@ def analyze(candidates, blocks_by_id):
     return per_candidate
 
 
-def consensus(per_candidate, blocks_by_id):
-    names = list(per_candidate)
+def consensus(per_candidate, blocks_by_id, candidate_names):
+    names = [n for n in candidate_names if n in per_candidate]
+    if not names:
+        names = list(per_candidate)
     out = []
     for bid in sorted(blocks_by_id):
         statuses = {n: next((r["status"] for r in per_candidate[n]["blocks"] if r["id"] == bid), "?")
@@ -152,7 +154,11 @@ def write_md(path, args, per_candidate, block_plan, ranking, recommended):
             c["tempo_ceiling_blocks"], c["metrics"]["coverage_vs_original"],
             c["metrics"]["silent_while_original_speaks_s"]))
     lines += ["", "**Recommended for next (paid) regeneration: %s**" % ", ".join(recommended),
-              "", "## Block actions (consensus across candidates)", "",
+              "",
+              "Block actions below are computed only across the recommended candidates, "
+              "so weaker discarded providers do not force unnecessary rewrites.",
+              "",
+              "## Block actions (recommended candidates only)", "",
               "| block | action | window (s) | words now | underfilled on | overrun on | stretch allowed? |",
               "|---|---|---|---|---|---|---|"]
     for b in block_plan:
@@ -198,9 +204,9 @@ def main():
     blocks_by_id = {b["id"]: b for b in doc["blocks"]}
 
     per_candidate = analyze(candidates, blocks_by_id)
-    block_plan = consensus(per_candidate, blocks_by_id)
     preferred = [n.strip() for n in args.prefer.split(",") if n.strip()]
     ranking, recommended = recommend(per_candidate, preferred)
+    block_plan = consensus(per_candidate, blocks_by_id, recommended)
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
