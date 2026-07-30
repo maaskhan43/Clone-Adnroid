@@ -57,6 +57,37 @@ def find_model_dir(tts_home):
     raise SystemExit("error: local XTTS-v2 config not found under %s" % base)
 
 
+def load_lines(doc):
+    """Accept the 6A performance-script schema ('lines' with abs_start/actor_lane_id)
+    OR the rewrite schema ('blocks' with start/end/target_text_hi/speaker)."""
+    if doc.get("lines"):
+        out = []
+        for L in doc["lines"]:
+            out.append({"line_id": L["line_id"], "abs_start": L["abs_start"],
+                        "abs_end": L["abs_end"], "target_text_hi": L["target_text_hi"],
+                        "actor_lane_id": L.get("actor_lane_id", L.get("speaker", "?")),
+                        "merge_with_next_for_tts": L.get("merge_with_next_for_tts", False)})
+        return out
+    if doc.get("blocks"):
+        out = []
+        for b in doc["blocks"]:
+            out.append({"line_id": b["id"], "abs_start": b["start"], "abs_end": b["end"],
+                        "target_text_hi": b["target_text_hi"],
+                        "actor_lane_id": b.get("speaker", "?"),
+                        "merge_with_next_for_tts": False})
+        return out
+    raise SystemExit("error: script has neither 'lines' nor 'blocks'")
+
+
+def rms_peak(np, x):
+    r = float(np.sqrt(np.mean(x ** 2))) if len(x) else 0.0
+    pk = float(np.max(np.abs(x))) if len(x) else 0.0
+    import math
+    return {"rms": round(r, 5), "peak": round(pk, 4),
+            "rms_dbfs": round(20 * math.log10(r), 2) if r > 0 else -120.0,
+            "peak_dbfs": round(20 * math.log10(pk), 2) if pk > 0 else -120.0}
+
+
 def analyze(np, wav, target_s):
     dur = len(wav) / XTTS_SR
     peak = float(np.max(np.abs(wav))) if len(wav) else 0.0
@@ -75,8 +106,13 @@ def analyze(np, wav, target_s):
     # long low-variation tail -> likely_repeat (reported, never auto-fixed)
     if target_s and ratio > 1.35:
         warnings.append("likely_stretch")
+    import math
+    if rms > 0 and 20 * math.log10(rms) < -34:
+        warnings.append("low_rms")
     return {"generated_s": round(dur, 2), "ratio": round(ratio, 2),
-            "peak": round(peak, 3), "rms": round(rms, 4), "warnings": warnings}
+            "peak": round(peak, 3), "rms": round(rms, 4),
+            "rms_dbfs": round(20 * math.log10(rms), 2) if rms > 0 else -120.0,
+            "warnings": warnings}
 
 
 def main():
@@ -156,7 +192,7 @@ def main():
     }
 
     doc = json.loads(Path(args.script).read_text(encoding="utf-8"))
-    lines = doc["lines"]
+    lines = load_lines(doc)
     t0 = min(L["abs_start"] for L in lines)
     scene_end = max(L["abs_end"] for L in lines)
     scene_dur = scene_end - t0
@@ -224,17 +260,40 @@ def main():
                      a["generated_s"], a["ratio"], ",".join(a["warnings"]) or "ok"))
             i += 1
 
-        # dialogue-only + scene mix (no stretch; just level + place + bed)
-        dpk = np.abs(timeline).max()
-        if dpk > 0:
-            timeline = timeline * (0.7 / dpk)  # headroom, no clip
+        # dialogue-only (NO peak-normalize here: keep true generated level so the
+        # diagnostics reflect real dialogue loudness vs bed - the whole point).
         sf.write(str(outdir / ("variant_%s_dialogue_only.wav" % vname)), timeline, XTTS_SR)
         n = min(len(bed), len(timeline))
-        mix = timeline[:n] + bed[:n] * 0.6
-        mpk = np.abs(mix).max()
-        if mpk > 0.99:
-            mix *= 0.99 / mpk
-        sf.write(str(outdir / ("variant_%s_scene_mix.wav" % vname)), mix, XTTS_SR)
+        dlg = timeline[:n]
+        bedn = bed[:n]
+
+        # --- audio diagnostics: is dialogue too quiet vs bed, or is the voice bad? ---
+        dlg_stat = rms_peak(np, dlg)
+        bed_stat = rms_peak(np, bedn)
+        dlg_to_bed_db = round(dlg_stat["rms_dbfs"] - bed_stat["rms_dbfs"], 2)
+        low_rms_lines = [r["line_ids"] for r in line_rows if "low_rms" in r["warnings"]]
+        stretch_lines = [r["line_ids"] for r in line_rows if "likely_stretch" in r["warnings"]]
+        # verdict heuristic: if dialogue sits well above bed but user hears it low, it is a
+        # playback/mix balance question; if dialogue RMS itself is very low or many lines are
+        # low_rms/stretched, it is a generation-quality problem.
+        gen_problem = len(low_rms_lines) >= 3 or len(stretch_lines) >= 4 or dlg_stat["rms_dbfs"] < -30
+        verdict = ("generation_quality (low/breathy or unstable lines)" if gen_problem
+                   else "mix_balance (dialogue level vs bed)" if dlg_to_bed_db < 6
+                   else "dialogue is forward vs bed; low audibility is likely playback/mix, not generation")
+
+        # mix-level versions: normal / +3 / +6 dB dialogue, each peak-guarded (no clip)
+        mix_files = {}
+        for tag, gain_db in [("normal", 0.0), ("dialogue_plus3db", 3.0), ("dialogue_plus6db", 6.0)]:
+            g = 10 ** (gain_db / 20.0)
+            mix = dlg * g + bedn * 0.6
+            mpk = np.abs(mix).max()
+            limited = mpk > 0.99
+            if limited:
+                mix = mix * (0.99 / mpk)
+            fn = "variant_%s_scene_mix_%s.wav" % (vname, tag)
+            sf.write(str(outdir / fn), mix, XTTS_SR)
+            mix_files[tag] = {"file": fn, "gain_db": gain_db,
+                              "peak": round(float(np.abs(mix).max()), 3), "peak_limited": bool(limited)}
 
         warn_counts = {}
         for r in line_rows:
@@ -242,8 +301,16 @@ def main():
                 warn_counts[w] = warn_counts.get(w, 0) + 1
         report["variants"][vname] = {
             "intent": v["intent"], "conditioning": v["cond"], "params": v["params"],
-            "scene_mix_s": round(len(mix) / XTTS_SR, 2),
+            "scene_mix_s": round(len(dlg) / XTTS_SR, 2),
             "dialogue_only_s": round(len(timeline) / XTTS_SR, 2),
+            "diagnostics": {
+                "dialogue_rms_dbfs": dlg_stat["rms_dbfs"], "dialogue_peak_dbfs": dlg_stat["peak_dbfs"],
+                "bed_rms_dbfs": bed_stat["rms_dbfs"], "bed_peak_dbfs": bed_stat["peak_dbfs"],
+                "dialogue_to_bed_db": dlg_to_bed_db,
+                "dialogue_likely_too_quiet_vs_bed": bool(dlg_to_bed_db < 6),
+                "low_rms_lines": low_rms_lines, "likely_stretch_lines": stretch_lines,
+                "likely_problem": verdict},
+            "mix_levels": mix_files,
             "warning_counts": warn_counts, "lines": line_rows}
 
     (outdir / "xtts_bakeoff_report.json").write_text(
@@ -254,28 +321,42 @@ def main():
         "All 4 variants use local XTTS-v2 (`language=hi`) with ONLY original-video speaker "
         "references (ref_SPEAKER_14_0/1/2). No Fish/Eleven/Azure. Baseline params come from the "
         "local model config.json (see xtts_bakeoff_report.json -> docs_basis).", "",
-        "## Listen in this order",
-        "1. `variant_A_default_hi_scene_mix.wav` (local config defaults)",
-        "2. `variant_B_low_random_no_stretch_scene_mix.wav` (lower randomness, stronger repetition control)",
-        "3. `variant_C_faster_tight_dialogue_scene_mix.wav` (speed 1.12, tighter)",
-        "4. `variant_D_single_ref_vs_multi_ref_scene_mix.wav` (single ref vs B's multi-ref)",
+        "## Listen in this order (each variant has 3 mix levels)",
+        "For each variant, compare the mix levels to separate 'voice is bad' from 'dialogue too quiet':",
+        "- `variant_<V>_scene_mix_normal.wav`",
+        "- `variant_<V>_scene_mix_dialogue_plus3db.wav`",
+        "- `variant_<V>_scene_mix_dialogue_plus6db.wav`",
         "",
-        "`variant_*_dialogue_only.wav` and `line_wavs/<variant>/*.wav` are provided for close inspection.",
+        "Variants: A_default_hi, B_low_random_no_stretch, C_faster_tight_dialogue, "
+        "D_single_ref_vs_multi_ref. `variant_*_dialogue_only.wav` and `line_wavs/<variant>/*.wav` "
+        "are the raw dialogue for close inspection.",
+        "",
+        "## The question this pack answers",
+        "You reported the words are too low and the voice sounds breathy. Play `normal` vs "
+        "`+3db` vs `+6db`:",
+        "- if `+3db`/`+6db` becomes clearly audible and fine -> the problem was **mix level**, "
+        "not the voice.",
+        "- if it is still breathy/unclear even at `+6db` -> the problem is **XTTS generation "
+        "quality**, and louder will not fix it.",
+        "The report's per-variant `diagnostics.likely_problem` gives the measured guess.",
         "",
         "## Ask only",
         "1. Does the voice feel attached to the scene?",
-        "2. Are the words understandable?",
-        "3. Any stretched / repeated / robotic words? which variant?",
-        "4. Is this better than the V11 Fish attempt?",
-        "5. Which variant is best / least bad?",
+        "2. Are the words understandable (and at which mix level)?",
+        "3. Any stretched / repeated / breathy words? which variant?",
+        "4. Is this better than the V11 Fish / 1500-scene XTTS attempt?",
+        "5. Which variant + mix level is best / least bad?",
         "",
         "Note: no time-stretching was applied to hide problems; per-line length ratios and "
-        "warnings (too_long/too_short/likely_stretch/clipped/silent) are in the report.", ""]
+        "warnings are in the report.", ""]
     (outdir / "README_LISTEN_FIRST.md").write_text("\n".join(rd), encoding="utf-8")
 
     print("\nreport: %s" % (outdir / "xtts_bakeoff_report.json"))
     for vname, v in report["variants"].items():
-        print("  %-26s mix=%.1fs warnings=%s" % (vname, v["scene_mix_s"], v["warning_counts"] or "none"))
+        dg = v["diagnostics"]
+        print("  %-26s dlg=%.1fdBFS bed=%.1fdBFS d/bed=%+.1fdB -> %s"
+              % (vname, dg["dialogue_rms_dbfs"], dg["bed_rms_dbfs"],
+                 dg["dialogue_to_bed_db"], dg["likely_problem"]))
     return 0
 
 
