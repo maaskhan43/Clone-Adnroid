@@ -370,6 +370,8 @@ def main():
     p.add_argument("--duration", type=float, default=60.0)
     p.add_argument("--providers", default=",".join(PROVIDERS),
                    help="comma-separated subset of: %s" % ", ".join(PROVIDERS))
+    p.add_argument("--roman-ids", default="",
+                   help="comma-separated block ids whose target is intentionally pure Latin/Hinglish")
     p.add_argument("--outdir", required=True)
     args = p.parse_args()
 
@@ -380,6 +382,16 @@ def main():
     blocks = [b for b in doc["blocks"] if b["target_text_hi"]]
     if not blocks:
         sys.exit("error: script has no authored blocks")
+
+    # PREFLIGHT: never send empty/mojibake/no-Devanagari text to a provider.
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from clonedub_v11_textguard import validate_blocks
+    bad = validate_blocks(blocks, [x for x in args.roman_ids.split(",") if x])
+    if bad:
+        print("PREFLIGHT REJECT: %d block(s) have invalid target text; no TTS run:" % len(bad))
+        for x in bad:
+            print("  %s: %s | %r" % (x["id"], x["reason"], x["text_preview"]))
+        sys.exit(2)
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
