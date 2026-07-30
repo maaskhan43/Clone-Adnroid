@@ -102,6 +102,24 @@ def contact_sheet(source_scene, scene_start, media_offset, dur, out_jpg):
         return False
 
 
+def extract_scene_clip(src, dst, scene_start, scene_end, media_offset):
+    """Extract the exact scene window from a container clip (re-encode for frame-accuracy).
+
+    Container local time = absolute - media_offset. For a clip that is already the
+    exact scene (e.g. the 60.88s 6B attempt), media_offset is passed as scene_start so
+    the local window is 0..dur.
+    """
+    local_start = scene_start - media_offset
+    dur = scene_end - scene_start
+    run(["ffmpeg", "-y", "-v", "error", "-ss", "%.3f" % max(0.0, local_start),
+         "-i", str(src), "-t", "%.3f" % dur, "-c:v", "libx264", "-preset", "veryfast",
+         "-crf", "18", "-c:a", "aac", "-b:a", "192k", str(dst)])
+    entry = stat_entry(dst)
+    entry["ffprobe"] = ffprobe(dst)
+    entry["source_container"] = str(src)
+    return entry
+
+
 def copy_or_reference(src, dst, do_copy, force):
     src = Path(src)
     entry = stat_entry(src)
@@ -142,6 +160,10 @@ def main():
     s, e = args.scene_start, args.scene_end
     dur = round(e - s, 2)
     outdir = Path(args.outdir)
+    # overwrite guard: never clobber a previous pack unless --force (V12 rule).
+    if outdir.exists() and any(outdir.iterdir()) and not args.force:
+        sys.exit("error: outdir %s exists and is not empty; pass --force to overwrite "
+                 "(refusing to clobber a previous pack)" % outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
     missing = []
@@ -179,7 +201,21 @@ def main():
     else:
         clips["v11_6b_attempt"] = {"exists": False}
 
-    # ffprobe summaries
+    # exact scene clips (the pack must contain the exact 60.88s scene, not the 180s container)
+    scene_clips = {}
+    scene_clips["source_scene"] = extract_scene_clip(
+        args.source_scene, outdir / ("source_scene_%.2f_%.2f.mp4" % (s, e)),
+        s, e, args.media_offset)
+    scene_clips["v1_scene"] = extract_scene_clip(
+        args.v1_scene, outdir / ("v1_scene_%.2f_%.2f.mp4" % (s, e)),
+        s, e, args.media_offset)
+    if v11_gen_preview:
+        # the 6B attempt is already the exact scene (local 0..dur), so offset = scene_start
+        scene_clips["v11_6b_attempt"] = extract_scene_clip(
+            v11_gen_preview, outdir / ("v11_6b_attempt_%.2f_%.2f.mp4" % (s, e)),
+            s, e, s)
+
+    # ffprobe summaries (of the original containers)
     probes = {k: ffprobe(v) for k, v in
               {"source_scene": args.source_scene, "v1_scene": args.v1_scene,
                "v11_6b_preview": v11_gen_preview}.items() if v}
@@ -233,6 +269,7 @@ def main():
                   "local_end": round(e - args.media_offset, 2)},
         "inputs": {k: stat_entry(v) for k, v in inputs.items() if v},
         "clips_in_pack": clips,
+        "scene_clips": scene_clips,
         "ffprobe": probes,
         "dialogue_segments": segs,
         "v11_links": {
@@ -346,6 +383,9 @@ def main():
           % (len(segs), len(v11_lanes.get("lanes", [])) if v11_lanes else 0,
              len(v11_perf.get("lines", [])) if v11_perf else 0))
     print("  contact sheet: %s | missing artifacts: %d" % (sheet_ok, len(missing)))
+    for name, c in scene_clips.items():
+        print("  scene clip %-16s %.2fs -> %s"
+              % (name, c.get("ffprobe", {}).get("duration", 0.0), Path(c["path"]).name))
     for m in missing:
         print("    MISSING: %s -> %s" % (m["label"], m["path"]))
     print("  files: README.md, scene_manifest.json, failure_analysis.md, next_questions.md,")
