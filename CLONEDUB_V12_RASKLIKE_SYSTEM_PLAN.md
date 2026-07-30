@@ -2,6 +2,12 @@
 
 Status: master plan started 2026-07-30 after V11 listening failures.
 
+Current execution reset: Phase 1 is now narrowed to one task only:
+make a single scene succeed with XTTS using original-video voice references.
+All broader V12 modules, provider bakeoffs, long previews, lip-sync, Android,
+Kaggle, and full-video work are paused until this Phase 1 succeeds. See
+`CLONEDUB_V12_PHASE1_XTTS_ORIGINAL_VOICE_PLAN.md`.
+
 This plan is for building our own best-version dubbing system over months. It is not a plan to copy Rask, scrape Rask, or depend on a single provider. "Rask-like" means the output feels like a finished video dub: character speech belongs inside the scene, timing feels motivated by the actor, and the final mix feels like one coherent video.
 
 ## 0. Hard decision from V11
@@ -484,4 +490,3 @@ V12 succeeds when:
 - then a 15-minute section can be produced without role/mix/timing collapse.
 
 Full episode is not the first milestone. A believable 60s scene is.
-
