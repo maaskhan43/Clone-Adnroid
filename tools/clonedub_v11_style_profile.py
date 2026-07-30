@@ -155,10 +155,12 @@ def analyze(np, sf, name, wav):
     fullband_nonspeech = env[~active] if (~active).any() else np.array([0.0])
     forwardness_db = db(float(np.mean(sb_speech)) if len(sb_speech) else 0.0) - \
         db(float(np.mean(sb_nonspeech)) if len(sb_nonspeech) else 0.0)
-    # ducking proxy: full-band floor during speech vs between speech
+    # bed-floor-under-speech proxy: full-band floor between speech minus floor during speech.
+    # More negative => the bed/room collapses far under speech (over-ducked / speech isolated).
+    # Rask keeps the bed alive (~-10 dB); V1 collapses it (~-42 dB).
     floor_speech = db(float(np.median(env[active])) if active.any() else 0.0)
     floor_between = db(float(np.median(fullband_nonspeech)))
-    ducking_db = floor_between - floor_speech  # positive => between-speech louder (no ducking)
+    bed_floor_delta_db = floor_between - floor_speech
 
     return {
         "name": name, "duration": round(dur, 3),
@@ -182,7 +184,8 @@ def analyze(np, sf, name, wav):
         "median_tail_s": round(median(tail_lens), 2),
         "abrupt_endings": sum(1 for t in tail_lens if t < 0.12),
         "speechband_forwardness_db": round(forwardness_db, 2),
-        "ducking_db": round(ducking_db, 2),
+        "bed_floor_under_speech_delta_db": round(bed_floor_delta_db, 2),
+        "ducking_db": round(bed_floor_delta_db, 2),  # deprecated alias, kept for compatibility
         "_env": env, "_active": active, "_windows": wins,
     }
 
@@ -221,6 +224,8 @@ def target_profile(rask):
         "target_active_ratio": rng(rask["active_ratio"], 0.92, 1.05),
         "target_speechband_forwardness_db": [round(rask["speechband_forwardness_db"] - 2, 1),
                                              round(rask["speechband_forwardness_db"] + 2, 1)],
+        "target_bed_floor_under_speech_delta_db": [round(rask["bed_floor_under_speech_delta_db"] - 3, 1),
+                                                   round(rask["bed_floor_under_speech_delta_db"] + 3, 1)],
         "target_median_crest_db": [round(rask["median_crest_db"] - 1.5, 1),
                                    round(rask["median_crest_db"] + 1.5, 1)],
         "target_window_rms_spread_max_db": round(rask["window_rms_spread_db"] + 1.5, 1),
@@ -241,7 +246,7 @@ def style_gaps(rask, v1):
         ("gap length", "median_gap_s", "s", 0.15),
         ("active speech ratio", "active_ratio", "", 0.05),
         ("line-ending tail", "median_tail_s", "s", 0.15),
-        ("ducking (floor between vs under speech)", "ducking_db", "dB", 2.0),
+        ("bed floor under speech (between minus under)", "bed_floor_under_speech_delta_db", "dB", 2.0),
         ("longest continuous narration", "longest_narration_s", "s", 3.0),
     ]
     gaps = []
@@ -290,13 +295,16 @@ def plot(np, tracks, outdir):
 
 def write_md(path, probes, tracks, drifts, overlaps, profile, gaps):
     orig, rask, v1 = tracks
-    L = ["# CloneDub V11 — Rask-style audio/timing profile (900-960s)", "",
+    L = ["# CloneDub V11 - Rask-style audio/timing profile (900-960s)", "",
          "Measurement only. **ASR transcript text is NOT used** (existing ASR is noisy/mojibake); "
          "all evidence below is waveform/VAD/envelope-derived.", "",
+         "Analyzed window duration = 60s for every clip. The `source duration` column is the "
+         "full file length (V1 is the full episode); only the 900-960s window was analyzed.", "",
          "## Stream contract", "",
-         "| clip | duration | video | audio | codec |", "|---|---|---|---|---|"]
+         "| clip | source duration | analyzed window | video | audio | codec |",
+         "|---|---|---|---|---|---|"]
     for nm, pr in probes.items():
-        L.append("| %s | %.2fs | %d | %d | %s |" % (nm, pr["duration"], pr["video_streams"],
+        L.append("| %s | %.2fs | 60.00s | %d | %d | %s |" % (nm, pr["duration"], pr["video_streams"],
                   pr["audio_streams"], pr["audio"].get("codec", "?")))
     L += ["", "## Core metrics (original / Rask / V1)", "",
           "| metric | original | Rask | V1 |", "|---|---|---|---|"]
@@ -310,7 +318,7 @@ def write_md(path, probes, tracks, drifts, overlaps, profile, gaps):
             ("window RMS spread (dB)", "window_rms_spread_db"),
             ("dynamic range (dB)", "dynamic_range_db"),
             ("speechband forwardness (dB)", "speechband_forwardness_db"),
-            ("ducking (dB, +=no duck)", "ducking_db"),
+            ("bed floor under speech delta (dB)", "bed_floor_under_speech_delta_db"),
             ("median tail (s)", "median_tail_s"), ("abrupt endings", "abrupt_endings")]
     for label, key in rows:
         L.append("| %s | %s | %s | %s |" % (label, orig[key], rask[key], v1[key]))
@@ -322,7 +330,7 @@ def write_md(path, probes, tracks, drifts, overlaps, profile, gaps):
               overlaps["rask"]["a_speaking_b_silent_s"], overlaps["v1"]["a_speaking_b_silent_s"]),
           "- Rask speaking-while-original-silent: %.2fs; V1: %.2fs" % (
               overlaps["rask"]["b_speaking_a_silent_s"], overlaps["v1"]["b_speaking_a_silent_s"]),
-          "", "## Top style gaps — what V1 must change to sound like Rask", ""]
+          "", "## Top style gaps - what V1 must change to sound like Rask", ""]
     if gaps:
         L.append("| # | trait | Rask | V1 | delta |")
         L.append("|---|---|---|---|---|")
@@ -333,14 +341,36 @@ def write_md(path, probes, tracks, drifts, overlaps, profile, gaps):
         L.append("(no gaps above thresholds)")
     L += ["", "## Target profile for future V1 improvement", "",
           "```json", json.dumps(profile, indent=2), "```", "",
-          "## Direction (audio-derived, for the style-application step — NOT done here)", "",
-          "- Match Rask's median window / gap: reshape lines toward that length, add the pauses it uses.",
-          "- Raise dialogue forwardness toward the target band (speech-band level over music floor).",
-          "- Apply compression so per-window crest and RMS spread fall into the target ranges "
-          "(consistent, forward delivery instead of uneven narration).",
-          "- Duck music under speech to match Rask's floor difference.",
-          "- Keep line-ending tails near Rask's median (avoid abrupt cut-offs and avoid long trailing narration).", ""]
-    path.write_text("\n".join(L), encoding="utf-8")
+          "## Direction (audio-derived, for the style-application step - NOT done here)", "",
+          "Measured baseline: V1 dialogue is too loud and too isolated relative to the bed "
+          "compared with Rask. V1 must move TOWARD Rask, not away from it:",
+          "",
+          "- REDUCE dialogue forwardness/isolation: bring V1 speechband forwardness from ~%.1f dB "
+          "DOWN toward Rask's ~%.1f dB (blend speech closer to the bed; stop over-separating it)."
+          % (v1["speechband_forwardness_db"], rask["speechband_forwardness_db"]),
+          "- REDUCE extreme ducking: bring V1 bed-floor-under-speech delta from ~%.1f dB UP toward "
+          "Rask's ~%.1f dB (keep music/room alive under speech instead of collapsing the bed)."
+          % (v1["bed_floor_under_speech_delta_db"], rask["bed_floor_under_speech_delta_db"]),
+          "- LOWER overall mix loudness: V1 RMS ~%.1f dBFS is ~%.1f dB hotter than Rask ~%.1f dBFS; "
+          "bring it down toward Rask."
+          % (v1["rms_dbfs"], v1["rms_dbfs"] - rask["rms_dbfs"], rask["rms_dbfs"]),
+          "- Match Rask's median window / gap: reshape lines toward Rask's median window (%.2fs) and "
+          "gap (%.2fs)." % (rask["median_window_s"], rask["median_gap_s"]),
+          "- Allow MORE level variation (acting): Rask's per-window RMS spread (%.1f dB) and crest "
+          "(%.1f dB) are wider than V1's (%.1f dB / %.1f dB) - V1 is flat/narration-like, not dynamic."
+          % (rask["window_rms_spread_db"], rask["median_crest_db"],
+             v1["window_rms_spread_db"], v1["median_crest_db"]),
+          "- Keep line-ending tails near Rask's median (%.2fs): avoid abrupt cut-offs and avoid long "
+          "trailing narration." % rask["median_tail_s"],
+          "",
+          "Note: `bed_floor_under_speech_delta_db` = full-band floor BETWEEN speech minus floor "
+          "DURING speech. More negative = bed collapses harder under speech (over-ducked / isolated). "
+          "Rask ~%.1f dB, V1 ~%.1f dB; target moves V1 toward Rask. (`ducking_db` is a deprecated "
+          "alias of this field.)" % (rask["bed_floor_under_speech_delta_db"],
+                                     v1["bed_floor_under_speech_delta_db"]), ""]
+    text = "\n".join(L)
+    # keep the report ASCII-safe for Windows viewers except intended Devanagari (none here)
+    path.write_text(text, encoding="utf-8")
 
 
 def main():
