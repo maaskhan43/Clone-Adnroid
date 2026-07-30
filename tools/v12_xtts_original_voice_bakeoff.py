@@ -124,6 +124,8 @@ def main():
     p.add_argument("--refs", nargs="+", required=True, help="original-video speaker reference wavs")
     p.add_argument("--tts-home", default="/mnt/d/CloneDub/tts_cache")
     p.add_argument("--language", default="hi")
+    p.add_argument("--variant-set", choices=["default", "phase1b"], default="default",
+                   help="'default' = A/B/C/D bakeoff; 'phase1b' = B2/C2/C3 wording+voice tuning")
     p.add_argument("--outdir", required=True)
     p.add_argument("--force", action="store_true", help="overwrite a non-empty outdir")
     args = p.parse_args()
@@ -162,34 +164,65 @@ def main():
         return gpt_lat, spk_emb
     multi = cond(args.refs, int(base["gpt_cond_len"]), int(base["max_ref_len"]))
     single = cond(args.refs[:1], int(base["gpt_cond_len"]), int(base["max_ref_len"]))
+    # C3 conditioning: multi-ref with sound_norm_refs=True (even reference loudness)
+    def cond_norm(ref_list):
+        gpt_lat, spk_emb = model.get_conditioning_latents(
+            audio_path=ref_list, gpt_cond_len=int(base["gpt_cond_len"]),
+            gpt_cond_chunk_len=int(base["gpt_cond_chunk_len"]),
+            max_ref_length=int(base["max_ref_len"]), sound_norm_refs=True)
+        return gpt_lat, spk_emb
 
-    # variants: baseline from LOCAL CONFIG; each variant documents its intent + deltas.
     B = base
-    variants = {
-        "A_default_hi": {
-            "intent": "local config defaults (baseline)", "cond": "multi",
-            "params": {"temperature": B["temperature"], "length_penalty": B["length_penalty"],
-                       "repetition_penalty": B["repetition_penalty"], "top_k": B["top_k"],
-                       "top_p": B["top_p"], "speed": 1.0, "enable_text_splitting": False}},
-        "B_low_random_no_stretch": {
-            "intent": "lower randomness + stronger repetition control to reduce stretched/weird speech",
-            "cond": "multi",
-            "params": {"temperature": 0.55, "length_penalty": 1.0,
-                       "repetition_penalty": 8.0, "top_k": 30, "top_p": 0.75,
-                       "speed": 1.0, "enable_text_splitting": False}},
-        "C_faster_tight_dialogue": {
-            "intent": "slightly faster/tighter dialogue via XTTS speed (not extreme)",
-            "cond": "multi",
-            "params": {"temperature": 0.6, "length_penalty": 1.0,
-                       "repetition_penalty": 6.0, "top_k": 40, "top_p": 0.8,
-                       "speed": 1.12, "enable_text_splitting": False}},
-        "D_single_ref_vs_multi_ref": {
-            "intent": "same params as B but SINGLE original ref (vs multi-ref B) to compare conditioning",
-            "cond": "single",
-            "params": {"temperature": 0.55, "length_penalty": 1.0,
-                       "repetition_penalty": 8.0, "top_k": 30, "top_p": 0.75,
-                       "speed": 1.0, "enable_text_splitting": False}},
-    }
+    if args.variant_set == "phase1b":
+        # B2 = B params, C2 = C params, C3 = C2 + documented anti-robotic knobs.
+        cond_map = {"multi": multi, "single": single, "norm": cond_norm(args.refs)}
+        variants = {
+            "B2_wording_tuned": {
+                "intent": "B params (low randomness, repetition control) on the v2 natural script",
+                "cond": "multi",
+                "params": {"temperature": 0.55, "length_penalty": 1.0, "repetition_penalty": 8.0,
+                           "top_k": 30, "top_p": 0.75, "speed": 1.0, "enable_text_splitting": False}},
+            "C2_wording_tuned": {
+                "intent": "C params (faster/tight) on the v2 natural script",
+                "cond": "multi",
+                "params": {"temperature": 0.6, "length_penalty": 1.0, "repetition_penalty": 6.0,
+                           "top_k": 40, "top_p": 0.8, "speed": 1.12, "enable_text_splitting": False}},
+            "C3_voice_less_robotic": {
+                "intent": "from C2: lower temperature/top_p + higher repetition_penalty + "
+                          "sound_norm_refs=True (norm cond). NOTE: enable_text_splitting is "
+                          "unavailable for hi in this build (split_sentence has no 'hi' char "
+                          "limit -> KeyError), so it is left False. No emotion/style control exists.",
+                "cond": "norm",
+                "params": {"temperature": 0.5, "length_penalty": 1.0, "repetition_penalty": 7.0,
+                           "top_k": 35, "top_p": 0.72, "speed": 1.08, "enable_text_splitting": False}},
+        }
+    else:
+        cond_map = {"multi": multi, "single": single}
+        variants = {
+            "A_default_hi": {
+                "intent": "local config defaults (baseline)", "cond": "multi",
+                "params": {"temperature": B["temperature"], "length_penalty": B["length_penalty"],
+                           "repetition_penalty": B["repetition_penalty"], "top_k": B["top_k"],
+                           "top_p": B["top_p"], "speed": 1.0, "enable_text_splitting": False}},
+            "B_low_random_no_stretch": {
+                "intent": "lower randomness + stronger repetition control to reduce stretched/weird speech",
+                "cond": "multi",
+                "params": {"temperature": 0.55, "length_penalty": 1.0,
+                           "repetition_penalty": 8.0, "top_k": 30, "top_p": 0.75,
+                           "speed": 1.0, "enable_text_splitting": False}},
+            "C_faster_tight_dialogue": {
+                "intent": "slightly faster/tighter dialogue via XTTS speed (not extreme)",
+                "cond": "multi",
+                "params": {"temperature": 0.6, "length_penalty": 1.0,
+                           "repetition_penalty": 6.0, "top_k": 40, "top_p": 0.8,
+                           "speed": 1.12, "enable_text_splitting": False}},
+            "D_single_ref_vs_multi_ref": {
+                "intent": "same params as B but SINGLE original ref (vs multi-ref B) to compare conditioning",
+                "cond": "single",
+                "params": {"temperature": 0.55, "length_penalty": 1.0,
+                           "repetition_penalty": 8.0, "top_k": 30, "top_p": 0.75,
+                           "speed": 1.0, "enable_text_splitting": False}},
+        }
 
     doc = json.loads(Path(args.script).read_text(encoding="utf-8"))
     lines = load_lines(doc)
@@ -226,7 +259,7 @@ def main():
               "variants": {}}
 
     for vname, v in variants.items():
-        gpt_lat, spk_emb = multi if v["cond"] == "multi" else single
+        gpt_lat, spk_emb = cond_map[v["cond"]]
         vdir = outdir / "line_wavs" / vname
         vdir.mkdir(parents=True, exist_ok=True)
         timeline = np.zeros(int(round(scene_dur * XTTS_SR)))
