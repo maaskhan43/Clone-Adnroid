@@ -37,6 +37,9 @@ RMS_DELTA_MAX_DB = 3.0           # candidate louder than reference by more -> ov
 RMS_DELTA_MIN_DB = -6.0          # candidate quieter than reference by more -> too low
 MAX_CONTINUOUS_WINDOW_S = 25.0   # single narration block longer than this is a red flag
 
+# --- experimental gate modes (defaults preserve original behavior) ---
+SPEECHBAND_HZ = (300.0, 3400.0)  # --vad-mode speechband: filter before activity
+
 # --- VAD parameters (calibrated against D:\CloneDub\work\rask_analysis) ---
 DEFAULT_SR = 16000
 FRAME_S = 0.025
@@ -116,15 +119,26 @@ def active_frames_to_windows(active, hop_s):
     return [[s, e, e - s] for s, e in merged if e - s >= MIN_WINDOW_S]
 
 
-def analyze_track(name, wav_path, np, sf):
+def bandpass_fft(np, x, lo, hi, sr):
+    spec = np.fft.rfft(x)
+    freqs = np.fft.rfftfreq(len(x), 1.0 / sr)
+    spec[(freqs < lo) | (freqs > hi)] = 0.0
+    return np.fft.irfft(spec, n=len(x))
+
+
+def analyze_track(name, wav_path, np, sf, vad_mode="baseline"):
     x, sr = sf.read(str(wav_path), dtype="float64")
     if x.ndim > 1:
         x = x.mean(axis=1)
     duration = len(x) / sr
     rms = float(np.sqrt(np.mean(x ** 2))) if len(x) else 0.0
     peak = float(np.max(np.abs(x))) if len(x) else 0.0
-    env, hop_s = rms_envelope(x, sr, np)
-    thr = max(VAD_ABS_FLOOR, VAD_RMS_RATIO * rms)
+    # RMS/peak (mix checks) always measure the unfiltered audio; only the
+    # activity measurement switches signal in speechband mode.
+    x_vad = bandpass_fft(np, x, *SPEECHBAND_HZ, sr) if vad_mode == "speechband" else x
+    vad_rms = float(np.sqrt(np.mean(x_vad ** 2))) if len(x_vad) else 0.0
+    env, hop_s = rms_envelope(x_vad, sr, np)
+    thr = max(VAD_ABS_FLOOR, VAD_RMS_RATIO * vad_rms)
     active = env >= thr
     windows = active_frames_to_windows(active, hop_s)
     speech_dur = sum(w[2] for w in windows)
@@ -187,7 +201,7 @@ def plot_envelopes(tracks, out_png, np):
     return True
 
 
-def build_checks(dur_req, tracks, probes, comps):
+def build_checks(dur_req, tracks, probes, comps, gate):
     orig, ref, cand = tracks["original"], tracks["reference"], tracks["candidate"]
     checks = []
 
@@ -217,9 +231,16 @@ def build_checks(dur_req, tracks, probes, comps):
              cov_r, MIN_COVERAGE_VS_REFERENCE))
 
     missing = comps["candidate_silent_while_original_speaking_s"]
-    check("silence_while_original_speaking", missing <= MAX_MISSING_SPEECH_S,
-          "candidate silent for %.2fs while original speaks (max %.2fs)"
-          % (missing, MAX_MISSING_SPEECH_S))
+    if gate["missing_gate"] == "benchmark-relative":
+        limit = gate["reference_missing_s"] + gate["missing_margin_s"]
+        check("silence_while_original_speaking", missing <= limit,
+              "candidate silent for %.2fs while original speaks "
+              "(benchmark-relative max %.2fs = reference %.2fs + margin %.2fs)"
+              % (missing, limit, gate["reference_missing_s"], gate["missing_margin_s"]))
+    else:
+        check("silence_while_original_speaking", missing <= MAX_MISSING_SPEECH_S,
+              "candidate silent for %.2fs while original speaks (max %.2fs)"
+              % (missing, MAX_MISSING_SPEECH_S))
 
     delta = comps["candidate_rms_delta_vs_reference_db"]
     check("mix_not_over_hot", delta <= RMS_DELTA_MAX_DB,
@@ -239,6 +260,11 @@ def write_scorecard(path, args, tracks, comps, checks, verdict, reasons):
         "# CloneDub V11 evaluation scorecard",
         "",
         "Verdict: **%s**" % verdict,
+        "",
+        "Gate mode: vad=%s, missing-gate=%s%s" % (
+            args.vad_mode, args.missing_gate,
+            " (margin %.1fs)" % args.missing_margin_s
+            if args.missing_gate == "benchmark-relative" else ""),
         "",
         "- original: `%s`" % args.original,
         "- benchmark reference: `%s`" % args.reference,
@@ -299,6 +325,16 @@ def main():
     p.add_argument("--duration", type=float, required=True, help="test window length in seconds")
     p.add_argument("--outdir", required=True, help="output directory (created if missing)")
     p.add_argument("--sr", type=int, default=DEFAULT_SR, help="analysis sample rate (default %d)" % DEFAULT_SR)
+    p.add_argument("--vad-mode", choices=["baseline", "speechband"], default="baseline",
+                   help="experimental: 'speechband' filters %d-%d Hz before activity "
+                        "measurement (default baseline = current behavior)"
+                        % (SPEECHBAND_HZ[0], SPEECHBAND_HZ[1]))
+    p.add_argument("--missing-gate", choices=["absolute", "benchmark-relative"], default="absolute",
+                   help="experimental: 'benchmark-relative' allows candidate missing-speech "
+                        "up to reference missing + --missing-margin-s (default absolute = "
+                        "current fixed %.1fs limit)" % MAX_MISSING_SPEECH_S)
+    p.add_argument("--missing-margin-s", type=float, default=2.0,
+                   help="margin for --missing-gate benchmark-relative (default 2.0)")
     args = p.parse_args()
 
     for tool in ("ffmpeg", "ffprobe"):
@@ -325,13 +361,14 @@ def main():
         wav = extracts / ("%s.wav" % name)
         start = args.candidate_start if name == "candidate" else 0.0
         extract_wav(path, wav, start, args.duration, args.sr)
-        tracks[name] = analyze_track(name, wav, np, sf)
+        tracks[name] = analyze_track(name, wav, np, sf, args.vad_mode)
         print("[analyze] %-9s active=%.2fs/%ss rms=%.1fdBFS windows=%d"
               % (name, tracks[name]["active_speech_seconds"], "%g" % args.duration,
                  tracks[name]["rms_dbfs"], tracks[name]["window_count"]))
 
     orig, ref, cand = tracks["original"], tracks["reference"], tracks["candidate"]
     ov_o = overlap_seconds(orig["_active"], cand["_active"], orig["_hop_s"], np)
+    ov_ref = overlap_seconds(orig["_active"], ref["_active"], orig["_hop_s"], np)
     db = lambda a, b: 20.0 * float(np.log10(a / b)) if a > 0 and b > 0 else 0.0
     comps = {
         "coverage_vs_original": cand["active_speech_seconds"] / orig["active_speech_seconds"]
@@ -340,17 +377,24 @@ def main():
             if ref["active_speech_seconds"] else 0.0,
         "candidate_silent_while_original_speaking_s": ov_o["a_speaking_b_silent_s"],
         "candidate_speaking_while_original_silent_s": ov_o["b_speaking_a_silent_s"],
+        "reference_silent_while_original_speaking_s": ov_ref["a_speaking_b_silent_s"],
         "candidate_rms_delta_vs_reference_db": db(cand["rms"], ref["rms"]),
         "candidate_rms_delta_vs_original_db": db(cand["rms"], orig["rms"]),
         "candidate_peak_delta_vs_reference_db": db(cand["peak"], ref["peak"]),
     }
 
-    checks = build_checks(args.duration, tracks, probes, comps)
+    gate = {"vad_mode": args.vad_mode, "missing_gate": args.missing_gate,
+            "missing_margin_s": args.missing_margin_s,
+            "reference_missing_s": ov_ref["a_speaking_b_silent_s"]}
+    checks = build_checks(args.duration, tracks, probes, comps, gate)
     reasons = [c["detail"] for c in checks if not c["pass"]]
     verdict = "PASS" if not reasons else "FAIL"
 
     for t in tracks.values():
-        env, _ = rms_envelope(sf.read(str(extracts / ("%s.wav" % t["name"])), dtype="float64")[0], args.sr, np)
+        x_plot = sf.read(str(extracts / ("%s.wav" % t["name"])), dtype="float64")[0]
+        if args.vad_mode == "speechband":
+            x_plot = bandpass_fft(np, x_plot, *SPEECHBAND_HZ, args.sr)
+        env, _ = rms_envelope(x_plot, args.sr, np)
         t["_env"] = env
     plotted = plot_envelopes([orig, ref, cand], outdir / "envelope.png", np)
     if not plotted:
@@ -375,6 +419,8 @@ def main():
     eval_doc = {
         "tool": "clonedub_v11_evaluate", "version": TOOL_VERSION,
         "args": {k: str(v) for k, v in vars(args).items()},
+        "gate_config": dict(gate, candidate_missing_s=comps[
+            "candidate_silent_while_original_speaking_s"]),
         "thresholds": thresholds,
         "streams": probes,
         "tracks": public,
