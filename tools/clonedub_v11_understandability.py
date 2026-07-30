@@ -47,8 +47,11 @@ def run(cmd):
                            % (proc.returncode, " ".join(map(str, cmd)), proc.stderr[-1200:]))
 
 
-def extract_segment_wav(src, dst, start, dur, sr=SR):
-    run(["ffmpeg", "-y", "-v", "error", "-ss", "%.3f" % start, "-i", str(src),
+def extract_segment_wav(src, dst, start, dur, media_start=0.0, sr=SR):
+    # segment times are absolute; a trimmed clip whose local 0 == media_start
+    # needs the local seek = start - media_start.
+    local = start - media_start
+    run(["ffmpeg", "-y", "-v", "error", "-ss", "%.3f" % local, "-i", str(src),
          "-t", "%.3f" % dur, "-vn", "-ac", "1", "-ar", str(sr),
          "-c:a", "pcm_s16le", str(dst)])
 
@@ -114,6 +117,8 @@ def analyze_segment(np, seg, wav):
     deva = len(DEVANAGARI.findall(text))
     eng_ratio = latin / (latin + deva) if (latin + deva) else 0.0
     long_words = sum(1 for w in words if len(w) >= 12)
+    # data-quality guard: text present but no real letters (e.g. mojibake "????")
+    text_ok = (latin + deva) > 0 if text.strip() else True
 
     return {
         "id": seg.get("id", ""), "speaker": seg.get("speaker", "?"),
@@ -129,7 +134,7 @@ def analyze_segment(np, seg, wav):
         "evenness_db": round(even_db, 1),
         "chars_per_word": round(sum(len(w) for w in words) / n_words, 1) if n_words else 0.0,
         "english_mix_ratio": round(eng_ratio, 2), "long_words_12plus": long_words,
-        "text": text,
+        "text_ok": text_ok, "text": text,
     }
 
 
@@ -150,16 +155,22 @@ def summarize(rows):
         "median_english_mix": round(statistics.median(f("english_mix_ratio")), 2),
         "total_long_words": sum(f("long_words_12plus")),
         "total_internal_pauses": sum(f("internal_pauses")),
+        "segments_with_bad_text": sum(1 for r in rows if not r["text_ok"]),
     }
 
 
 def main():
     p = argparse.ArgumentParser(description="Quantify what makes a dub window "
                                             "understandable (no TTS/APIs).")
-    p.add_argument("--video", required=True, help="dubbed video (e.g. old V1 full)")
-    p.add_argument("--segments", required=True, help="pipeline segments.json (text_hi + timings)")
+    p.add_argument("--video", required=True, help="dubbed video (full or trimmed clip)")
+    p.add_argument("--segments", required=True,
+                   help="segments/script json with absolute start/end + target_text_hi "
+                        "(pipeline segments.json OR a script_blocks json)")
     p.add_argument("--window-start", type=float, required=True)
     p.add_argument("--window-end", type=float, required=True)
+    p.add_argument("--media-start-s", type=float, default=0.0,
+                   help="absolute time that maps to the video's local 0 (use 0 for the "
+                        "full video; use the window start, e.g. 1470, for a trimmed clip)")
     p.add_argument("--label", default="oldv1")
     p.add_argument("--outdir", required=True)
     args = p.parse_args()
@@ -167,9 +178,16 @@ def main():
     import numpy as np
 
     doc = json.loads(Path(args.segments).read_text(encoding="utf-8"))
-    segs = [s for s in doc["segments"]
-            if s["start"] < args.window_end and s["end"] > args.window_start
-            and s.get("text_hi", "").strip()]
+    raw = doc.get("segments") or doc.get("blocks") or []
+    segs = []
+    for s in raw:
+        if s["start"] >= args.window_end or s["end"] <= args.window_start:
+            continue
+        text = s.get("text_hi") or s.get("target_text_hi") or ""
+        if not text.strip():
+            continue
+        segs.append({"start": s["start"], "end": s["end"], "speaker": s.get("speaker", "?"),
+                     "text_hi": text, "id": s.get("id", "")})
     if not segs:
         sys.exit("error: no dubbed segments in window")
 
@@ -181,7 +199,8 @@ def main():
     for i, seg in enumerate(segs):
         seg.setdefault("id", "s%03d" % i)
         wav = clips / ("%s.wav" % seg["id"])
-        extract_segment_wav(args.video, wav, seg["start"], seg["end"] - seg["start"])
+        extract_segment_wav(args.video, wav, seg["start"], seg["end"] - seg["start"],
+                            media_start=args.media_start_s)
         rows.append(analyze_segment(np, seg, wav))
         print("[seg] %s %s %.1f-%.1f wps=%.2f rms=%.1f even=%.1f"
               % (seg["id"], rows[-1]["speaker"], seg["start"], seg["end"],
