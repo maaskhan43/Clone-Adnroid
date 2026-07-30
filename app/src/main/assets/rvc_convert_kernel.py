@@ -155,6 +155,8 @@ def validate_inputs():
             raise RuntimeError("Model dataset is missing %s — run training (8.1) first" % required)
     if not os.path.isfile(os.path.join(MODEL_DS, "hubert_base", "config.json")):
         raise RuntimeError("Model dataset is missing hubert_base/ (transformers format)")
+    if not os.path.isfile(os.path.join(MODEL_DS, "hubert_base", "preprocessor_config.json")):
+        raise RuntimeError("Model dataset is missing hubert_base/preprocessor_config.json — rerun training")
     return audio, job
 
 

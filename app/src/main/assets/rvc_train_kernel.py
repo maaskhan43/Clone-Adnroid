@@ -73,6 +73,27 @@ def run(cmd, cwd=None):
     subprocess.run(cmd, shell=True, check=True, cwd=cwd)
 
 
+def patch_rvc_source():
+    train_py = f"{RVC}/train/train.py"
+    source = open(train_py, encoding="utf-8").read()
+    target = "from torch.utils.tensorboard import SummaryWriter"
+    replacement = """class SummaryWriter:
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __getattr__(self, name):
+        def _noop(*args, **kwargs):
+            return None
+        return _noop
+"""
+    if target not in source:
+        raise RuntimeError("SummaryWriter import target missing in pinned RVC train.py")
+    source = source.replace(target, replacement, 1)
+    with open(train_py, "w", encoding="utf-8") as f:
+        f.write(source)
+    log("patched train.py TensorBoard writer")
+
+
 def write_result():
     os.makedirs(OUT, exist_ok=True)
     with open(os.path.join(OUT, "train_result.json"), "w") as f:
@@ -88,6 +109,7 @@ def install():
     run("pip uninstall -q -y torchvision")
     run(f"git clone {RVC_REPO} {RVC}")
     run(f"git -C {RVC} checkout {RVC_COMMIT}")
+    patch_rvc_source()
     req = open(f"{RVC}/requirments_cu128_py312.txt").read().splitlines()
     with open("/kaggle/working/req.txt", "w") as f:
         f.write("\n".join(l for l in req if not l.strip().startswith("--index-url")))
@@ -106,6 +128,18 @@ def assets():
     run("pip install -q huggingface_hub")
     from huggingface_hub import snapshot_download, hf_hub_download
     snapshot_download("lengyue233/content-vec-best", local_dir="/kaggle/working/hubert_base")
+    preprocessor_config = "/kaggle/working/hubert_base/preprocessor_config.json"
+    if not os.path.isfile(preprocessor_config):
+        with open(preprocessor_config, "w", encoding="utf-8") as f:
+            json.dump({
+                "do_normalize": False,
+                "feature_extractor_type": "Wav2Vec2FeatureExtractor",
+                "feature_size": 1,
+                "padding_side": "right",
+                "padding_value": 0.0,
+                "return_attention_mask": False,
+                "sampling_rate": 16000,
+            }, f, indent=2, sort_keys=True)
     os.makedirs(f"{RVC}/assets/rmvpe", exist_ok=True)
     os.makedirs(f"{RVC}/assets/pretrained_v2", exist_ok=True)
     os.makedirs(f"{RVC}/assets/weights", exist_ok=True)
