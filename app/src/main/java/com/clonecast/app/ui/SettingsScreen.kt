@@ -316,8 +316,6 @@ private fun KaggleSection() {
                     kaggleTestOk = result.isSuccess
                     kaggleTestResult = result.fold(
                         onSuccess = { quota ->
-                            KaggleStore.saveCreds(context, userInput, kaggleKeyInput)
-                            kaggleSaved = true
                             val usedH = quota.usedSeconds / 3600f
                             val totalH = quota.totalSeconds / 3600f
                             if (quota.totalSeconds > 0) {

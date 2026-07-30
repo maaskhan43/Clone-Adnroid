@@ -68,26 +68,6 @@ object KaggleClient {
         }
     }
 
-    /**
-     * Kaggle returns 403 (not 404) for some missing/private dataset operations,
-     * even when /kernels/quota proves the credentials are valid. For our exact
-     * clonecast-* dataset create/version/status flow, treat 403/404 as NOT_FOUND
-     * so first-run bootstrap can create the dataset instead of showing a false
-     * "credentials rejected" error.
-     */
-    private fun executeDataset(request: Request, client: OkHttpClient = Http.client): String {
-        com.clonecast.app.tts.executeCall(request, client).use { response ->
-            val body = response.body?.string().orEmpty()
-            if (!response.isSuccessful) {
-                if (response.code == 403 || response.code == 404) {
-                    throw IllegalStateException("NOT_FOUND")
-                }
-                throw IllegalStateException(kaggleError(response.code, body))
-            }
-            return body
-        }
-    }
-
     private fun kaggleError(code: Int, body: String): String = when (code) {
         401, 403 -> "Kaggle rejected the credentials (HTTP $code) — check username & API key"
         404 -> "NOT_FOUND"
@@ -231,7 +211,7 @@ object KaggleClient {
                     tokens.forEach { add(buildJsonObject { put("token", it) }) }
                 })
             }
-            val body = executeDataset(
+            val body = execute(
                 authed(creds, "$BASE/datasets/create/version/${creds.username}/$slug")
                     .post(payload.toString().toRequestBody(jsonMedia))
                     .build(),
@@ -248,7 +228,7 @@ object KaggleClient {
     suspend fun datasetStatus(creds: Creds, slug: String): Result<String> =
         withContext(Dispatchers.IO) {
             runCatching {
-                val body = executeDataset(
+                val body = execute(
                     authed(creds, "$BASE/datasets/status/${creds.username}/$slug").get().build(),
                 )
                 // Response is {"status": "READY"} (enum name) — parse defensively.
