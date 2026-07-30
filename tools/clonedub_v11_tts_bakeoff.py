@@ -139,6 +139,53 @@ PROVIDERS = {
 }
 
 
+def file_sha256(path):
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def provider_cache_config(name):
+    """Non-secret provider identity used to validate cached paid TTS audio."""
+    if name == "edge_swara":
+        return {"provider": name, "voice": EDGE_VOICE}
+    if name == "azure_ananya":
+        return {"provider": name, "voices": AZURE_VOICES}
+    if name == "eleven_v2":
+        return {"provider": name, "voice": ELEVEN_VOICE, "model": ELEVEN_MODEL}
+    if name == "fish_girl":
+        p = Path(FISH_SAMPLE)
+        return {"provider": name, "sample": str(p), "sample_sha256": file_sha256(p),
+                "model": os.environ.get("FISH_MODEL", "s2.1-pro-free")}
+    return {"provider": name}
+
+
+def cache_sig(name, text, config):
+    return hashlib.sha256(json.dumps(
+        {"name": name, "text": text, "config": config, "tool": TOOL_VERSION},
+        sort_keys=True).encode()).hexdigest()[:24]
+
+
+def legacy_cache_compatible(name, text, meta, config):
+    """Allow one safe migration from the older provider+text cache key."""
+    legacy = hashlib.sha256((name + "|" + text).encode()).hexdigest()[:16]
+    if meta.get("sig") != legacy:
+        return False
+    if name == "edge_swara":
+        return meta.get("voice") == config["voice"]
+    if name == "azure_ananya":
+        return meta.get("voice") in config["voices"]
+    if name == "eleven_v2":
+        return meta.get("voice") == config["voice"] and meta.get("model") == config["model"]
+    if name == "fish_girl":
+        # Legacy fish metadata did not store sample checksum; require the recorded
+        # voice basename to match before migrating to the stronger signature.
+        return meta.get("voice") == "fish:" + Path(config["sample"]).name
+    return False
+
+
 # ------------------------------------------------------------ audio ops
 
 def load(np, sf, path):
@@ -200,13 +247,22 @@ def build_candidate(name, spec, blocks, args, paths, np, sf):
     notes, meta = [], {}
     for b in blocks:
         wav = bdir / ("%s.wav" % b["id"])
-        sig = hashlib.sha256((name + "|" + b["target_text_hi"]).encode()).hexdigest()[:16]
+        config = provider_cache_config(name)
+        sig = cache_sig(name, b["target_text_hi"], config)
         meta_f = bdir / ("%s.json" % b["id"])
-        if not (wav.is_file() and meta_f.is_file()
-                and json.loads(meta_f.read_text()).get("sig") == sig):
+        meta_old = json.loads(meta_f.read_text()) if meta_f.is_file() else {}
+        cache_ok = wav.is_file() and meta_old.get("sig") == sig
+        if (not cache_ok and wav.is_file() and meta_old
+                and legacy_cache_compatible(name, b["target_text_hi"], meta_old, config)):
+            meta_old["sig"] = sig
+            meta_old["cache_config"] = config
+            meta_f.write_text(json.dumps(meta_old, ensure_ascii=False))
+            cache_ok = True
+        if not cache_ok:
             kw = {"outdir": cdir} if spec.get("wants_outdir") else {}
             info = spec["synth"](b["target_text_hi"], wav, bdir / ("%s_raw" % b["id"]), **kw)
             info["sig"] = sig
+            info["cache_config"] = config
             meta_f.write_text(json.dumps(info, ensure_ascii=False))
         meta[b["id"]] = json.loads(meta_f.read_text())
         x, _ = load(np, sf, wav)
