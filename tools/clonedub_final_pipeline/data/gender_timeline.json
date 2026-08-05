@@ -1,0 +1,2678 @@
+[
+{
+"scene_t": 0.8,
+"abs_t": 1470.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 1.2,
+"abs_t": 1471.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 1.6,
+"abs_t": 1471.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 2.0,
+"abs_t": 1472.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 2.4,
+"abs_t": 1472.4,
+"label": "male",
+"rms": 0.0017
+},
+{
+"scene_t": 2.8,
+"abs_t": 1472.8,
+"label": "female",
+"rms": 0.0019
+},
+{
+"scene_t": 3.2,
+"abs_t": 1473.2,
+"label": "female",
+"rms": 0.0029
+},
+{
+"scene_t": 3.6,
+"abs_t": 1473.6,
+"label": "female",
+"rms": 0.0031
+},
+{
+"scene_t": 4.0,
+"abs_t": 1474.0,
+"label": "female",
+"rms": 0.0029
+},
+{
+"scene_t": 4.4,
+"abs_t": 1474.4,
+"label": "female",
+"rms": 0.0027
+},
+{
+"scene_t": 4.8,
+"abs_t": 1474.8,
+"label": "female",
+"rms": 0.0016
+},
+{
+"scene_t": 5.2,
+"abs_t": 1475.2,
+"label": "silence",
+"rms": 0.0011
+},
+{
+"scene_t": 5.6,
+"abs_t": 1475.6,
+"label": "silence",
+"rms": 0.0004
+},
+{
+"scene_t": 6.0,
+"abs_t": 1476.0,
+"label": "silence",
+"rms": 0.0004
+},
+{
+"scene_t": 6.4,
+"abs_t": 1476.4,
+"label": "silence",
+"rms": 0.0003
+},
+{
+"scene_t": 6.8,
+"abs_t": 1476.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 7.2,
+"abs_t": 1477.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 7.6,
+"abs_t": 1477.6,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 8.0,
+"abs_t": 1478.0,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 8.4,
+"abs_t": 1478.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 8.8,
+"abs_t": 1478.8,
+"label": "female",
+"rms": 0.003
+},
+{
+"scene_t": 9.2,
+"abs_t": 1479.2,
+"label": "female",
+"rms": 0.0041
+},
+{
+"scene_t": 9.6,
+"abs_t": 1479.6,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 10.0,
+"abs_t": 1480.0,
+"label": "female",
+"rms": 0.0044
+},
+{
+"scene_t": 10.4,
+"abs_t": 1480.4,
+"label": "male",
+"rms": 0.0033
+},
+{
+"scene_t": 10.8,
+"abs_t": 1480.8,
+"label": "male",
+"rms": 0.0016
+},
+{
+"scene_t": 11.2,
+"abs_t": 1481.2,
+"label": "silence",
+"rms": 0.0013
+},
+{
+"scene_t": 11.6,
+"abs_t": 1481.6,
+"label": "silence",
+"rms": 0.001
+},
+{
+"scene_t": 12.0,
+"abs_t": 1482.0,
+"label": "female",
+"rms": 0.0025
+},
+{
+"scene_t": 12.4,
+"abs_t": 1482.4,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 12.8,
+"abs_t": 1482.8,
+"label": "female",
+"rms": 0.0044
+},
+{
+"scene_t": 13.2,
+"abs_t": 1483.2,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 13.6,
+"abs_t": 1483.6,
+"label": "female",
+"rms": 0.0046
+},
+{
+"scene_t": 14.0,
+"abs_t": 1484.0,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 14.4,
+"abs_t": 1484.4,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 14.8,
+"abs_t": 1484.8,
+"label": "female",
+"rms": 0.003
+},
+{
+"scene_t": 15.2,
+"abs_t": 1485.2,
+"label": "female",
+"rms": 0.002
+},
+{
+"scene_t": 15.6,
+"abs_t": 1485.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 16.0,
+"abs_t": 1486.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 16.4,
+"abs_t": 1486.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 16.8,
+"abs_t": 1486.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 17.2,
+"abs_t": 1487.2,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 17.6,
+"abs_t": 1487.6,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 18.0,
+"abs_t": 1488.0,
+"label": "female",
+"rms": 0.0027
+},
+{
+"scene_t": 18.4,
+"abs_t": 1488.4,
+"label": "female",
+"rms": 0.0029
+},
+{
+"scene_t": 18.8,
+"abs_t": 1488.8,
+"label": "female",
+"rms": 0.0029
+},
+{
+"scene_t": 19.2,
+"abs_t": 1489.2,
+"label": "female",
+"rms": 0.0032
+},
+{
+"scene_t": 19.6,
+"abs_t": 1489.6,
+"label": "female",
+"rms": 0.0018
+},
+{
+"scene_t": 20.0,
+"abs_t": 1490.0,
+"label": "silence",
+"rms": 0.0015
+},
+{
+"scene_t": 20.4,
+"abs_t": 1490.4,
+"label": "female",
+"rms": 0.0021
+},
+{
+"scene_t": 20.8,
+"abs_t": 1490.8,
+"label": "silence",
+"rms": 0.0015
+},
+{
+"scene_t": 21.2,
+"abs_t": 1491.2,
+"label": "female",
+"rms": 0.0026
+},
+{
+"scene_t": 21.6,
+"abs_t": 1491.6,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 22.0,
+"abs_t": 1492.0,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 22.4,
+"abs_t": 1492.4,
+"label": "female",
+"rms": 0.0056
+},
+{
+"scene_t": 22.8,
+"abs_t": 1492.8,
+"label": "female",
+"rms": 0.0057
+},
+{
+"scene_t": 23.2,
+"abs_t": 1493.2,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 23.6,
+"abs_t": 1493.6,
+"label": "female",
+"rms": 0.0038
+},
+{
+"scene_t": 24.0,
+"abs_t": 1494.0,
+"label": "female",
+"rms": 0.0025
+},
+{
+"scene_t": 24.4,
+"abs_t": 1494.4,
+"label": "male",
+"rms": 0.0048
+},
+{
+"scene_t": 24.8,
+"abs_t": 1494.8,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 25.2,
+"abs_t": 1495.2,
+"label": "female",
+"rms": 0.006
+},
+{
+"scene_t": 25.6,
+"abs_t": 1495.6,
+"label": "female",
+"rms": 0.0061
+},
+{
+"scene_t": 26.0,
+"abs_t": 1496.0,
+"label": "female",
+"rms": 0.0046
+},
+{
+"scene_t": 26.4,
+"abs_t": 1496.4,
+"label": "male",
+"rms": 0.0041
+},
+{
+"scene_t": 26.8,
+"abs_t": 1496.8,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 27.2,
+"abs_t": 1497.2,
+"label": "male",
+"rms": 0.0027
+},
+{
+"scene_t": 27.6,
+"abs_t": 1497.6,
+"label": "silence",
+"rms": 0.001
+},
+{
+"scene_t": 28.0,
+"abs_t": 1498.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 28.4,
+"abs_t": 1498.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 28.8,
+"abs_t": 1498.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 29.2,
+"abs_t": 1499.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 29.6,
+"abs_t": 1499.6,
+"label": "female",
+"rms": 0.0021
+},
+{
+"scene_t": 30.0,
+"abs_t": 1500.0,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 30.4,
+"abs_t": 1500.4,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 30.8,
+"abs_t": 1500.8,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 31.2,
+"abs_t": 1501.2,
+"label": "female",
+"rms": 0.0052
+},
+{
+"scene_t": 31.6,
+"abs_t": 1501.6,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 32.0,
+"abs_t": 1502.0,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 32.4,
+"abs_t": 1502.4,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 32.8,
+"abs_t": 1502.8,
+"label": "female",
+"rms": 0.0033
+},
+{
+"scene_t": 33.2,
+"abs_t": 1503.2,
+"label": "female",
+"rms": 0.0031
+},
+{
+"scene_t": 33.6,
+"abs_t": 1503.6,
+"label": "female",
+"rms": 0.0028
+},
+{
+"scene_t": 34.0,
+"abs_t": 1504.0,
+"label": "female",
+"rms": 0.0021
+},
+{
+"scene_t": 34.4,
+"abs_t": 1504.4,
+"label": "female",
+"rms": 0.0017
+},
+{
+"scene_t": 34.8,
+"abs_t": 1504.8,
+"label": "silence",
+"rms": 0.0012
+},
+{
+"scene_t": 35.2,
+"abs_t": 1505.2,
+"label": "female",
+"rms": 0.003
+},
+{
+"scene_t": 35.6,
+"abs_t": 1505.6,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 36.0,
+"abs_t": 1506.0,
+"label": "female",
+"rms": 0.0036
+},
+{
+"scene_t": 36.4,
+"abs_t": 1506.4,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 36.8,
+"abs_t": 1506.8,
+"label": "female",
+"rms": 0.0029
+},
+{
+"scene_t": 37.2,
+"abs_t": 1507.2,
+"label": "male",
+"rms": 0.0024
+},
+{
+"scene_t": 37.6,
+"abs_t": 1507.6,
+"label": "female",
+"rms": 0.0019
+},
+{
+"scene_t": 38.0,
+"abs_t": 1508.0,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 38.4,
+"abs_t": 1508.4,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 38.8,
+"abs_t": 1508.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 39.2,
+"abs_t": 1509.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 39.6,
+"abs_t": 1509.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 40.0,
+"abs_t": 1510.0,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 40.4,
+"abs_t": 1510.4,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 40.8,
+"abs_t": 1510.8,
+"label": "silence",
+"rms": 0.0004
+},
+{
+"scene_t": 41.2,
+"abs_t": 1511.2,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 41.6,
+"abs_t": 1511.6,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 42.0,
+"abs_t": 1512.0,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 42.4,
+"abs_t": 1512.4,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 42.8,
+"abs_t": 1512.8,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 43.2,
+"abs_t": 1513.2,
+"label": "female",
+"rms": 0.0021
+},
+{
+"scene_t": 43.6,
+"abs_t": 1513.6,
+"label": "female",
+"rms": 0.0024
+},
+{
+"scene_t": 44.0,
+"abs_t": 1514.0,
+"label": "female",
+"rms": 0.0024
+},
+{
+"scene_t": 44.4,
+"abs_t": 1514.4,
+"label": "female",
+"rms": 0.0027
+},
+{
+"scene_t": 44.8,
+"abs_t": 1514.8,
+"label": "female",
+"rms": 0.0032
+},
+{
+"scene_t": 45.2,
+"abs_t": 1515.2,
+"label": "female",
+"rms": 0.0037
+},
+{
+"scene_t": 45.6,
+"abs_t": 1515.6,
+"label": "female",
+"rms": 0.0037
+},
+{
+"scene_t": 46.0,
+"abs_t": 1516.0,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 46.4,
+"abs_t": 1516.4,
+"label": "female",
+"rms": 0.0022
+},
+{
+"scene_t": 46.8,
+"abs_t": 1516.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 47.2,
+"abs_t": 1517.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 47.6,
+"abs_t": 1517.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 48.0,
+"abs_t": 1518.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 48.4,
+"abs_t": 1518.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 48.8,
+"abs_t": 1518.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 49.2,
+"abs_t": 1519.2,
+"label": "male",
+"rms": 0.0025
+},
+{
+"scene_t": 49.6,
+"abs_t": 1519.6,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 50.0,
+"abs_t": 1520.0,
+"label": "female",
+"rms": 0.0036
+},
+{
+"scene_t": 50.4,
+"abs_t": 1520.4,
+"label": "female",
+"rms": 0.0037
+},
+{
+"scene_t": 50.8,
+"abs_t": 1520.8,
+"label": "male",
+"rms": 0.004
+},
+{
+"scene_t": 51.2,
+"abs_t": 1521.2,
+"label": "male",
+"rms": 0.0042
+},
+{
+"scene_t": 51.6,
+"abs_t": 1521.6,
+"label": "male",
+"rms": 0.0041
+},
+{
+"scene_t": 52.0,
+"abs_t": 1522.0,
+"label": "male",
+"rms": 0.0039
+},
+{
+"scene_t": 52.4,
+"abs_t": 1522.4,
+"label": "male",
+"rms": 0.0027
+},
+{
+"scene_t": 52.8,
+"abs_t": 1522.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 53.2,
+"abs_t": 1523.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 53.6,
+"abs_t": 1523.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 54.0,
+"abs_t": 1524.0,
+"label": "silence",
+"rms": 0.0012
+},
+{
+"scene_t": 54.4,
+"abs_t": 1524.4,
+"label": "silence",
+"rms": 0.0013
+},
+{
+"scene_t": 54.8,
+"abs_t": 1524.8,
+"label": "female",
+"rms": 0.0026
+},
+{
+"scene_t": 55.2,
+"abs_t": 1525.2,
+"label": "female",
+"rms": 0.003
+},
+{
+"scene_t": 55.6,
+"abs_t": 1525.6,
+"label": "female",
+"rms": 0.0031
+},
+{
+"scene_t": 56.0,
+"abs_t": 1526.0,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 56.4,
+"abs_t": 1526.4,
+"label": "female",
+"rms": 0.0032
+},
+{
+"scene_t": 56.8,
+"abs_t": 1526.8,
+"label": "female",
+"rms": 0.0028
+},
+{
+"scene_t": 57.2,
+"abs_t": 1527.2,
+"label": "female",
+"rms": 0.0024
+},
+{
+"scene_t": 57.6,
+"abs_t": 1527.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 58.0,
+"abs_t": 1528.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 58.4,
+"abs_t": 1528.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 58.8,
+"abs_t": 1528.8,
+"label": "silence",
+"rms": 0.0008
+},
+{
+"scene_t": 59.2,
+"abs_t": 1529.2,
+"label": "male",
+"rms": 0.0039
+},
+{
+"scene_t": 59.6,
+"abs_t": 1529.6,
+"label": "male",
+"rms": 0.0043
+},
+{
+"scene_t": 60.0,
+"abs_t": 1530.0,
+"label": "male",
+"rms": 0.0043
+},
+{
+"scene_t": 60.4,
+"abs_t": 1530.4,
+"label": "male",
+"rms": 0.0046
+},
+{
+"scene_t": 60.8,
+"abs_t": 1530.8,
+"label": "female",
+"rms": 0.0037
+},
+{
+"scene_t": 61.2,
+"abs_t": 1531.2,
+"label": "male",
+"rms": 0.0032
+},
+{
+"scene_t": 61.6,
+"abs_t": 1531.6,
+"label": "male",
+"rms": 0.0032
+},
+{
+"scene_t": 62.0,
+"abs_t": 1532.0,
+"label": "male",
+"rms": 0.0026
+},
+{
+"scene_t": 62.4,
+"abs_t": 1532.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 62.8,
+"abs_t": 1532.8,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 63.2,
+"abs_t": 1533.2,
+"label": "silence",
+"rms": 0.0011
+},
+{
+"scene_t": 63.6,
+"abs_t": 1533.6,
+"label": "male",
+"rms": 0.0021
+},
+{
+"scene_t": 64.0,
+"abs_t": 1534.0,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 64.4,
+"abs_t": 1534.4,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 64.8,
+"abs_t": 1534.8,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 65.2,
+"abs_t": 1535.2,
+"label": "female",
+"rms": 0.0046
+},
+{
+"scene_t": 65.6,
+"abs_t": 1535.6,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 66.0,
+"abs_t": 1536.0,
+"label": "male",
+"rms": 0.0037
+},
+{
+"scene_t": 66.4,
+"abs_t": 1536.4,
+"label": "female",
+"rms": 0.0052
+},
+{
+"scene_t": 66.8,
+"abs_t": 1536.8,
+"label": "female",
+"rms": 0.006
+},
+{
+"scene_t": 67.2,
+"abs_t": 1537.2,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 67.6,
+"abs_t": 1537.6,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 68.0,
+"abs_t": 1538.0,
+"label": "male",
+"rms": 0.0031
+},
+{
+"scene_t": 68.4,
+"abs_t": 1538.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 68.8,
+"abs_t": 1538.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 69.2,
+"abs_t": 1539.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 69.6,
+"abs_t": 1539.6,
+"label": "silence",
+"rms": 0.0005
+},
+{
+"scene_t": 70.0,
+"abs_t": 1540.0,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 70.4,
+"abs_t": 1540.4,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 70.8,
+"abs_t": 1540.8,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 71.2,
+"abs_t": 1541.2,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 71.6,
+"abs_t": 1541.6,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 72.0,
+"abs_t": 1542.0,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 72.4,
+"abs_t": 1542.4,
+"label": "female",
+"rms": 0.0057
+},
+{
+"scene_t": 72.8,
+"abs_t": 1542.8,
+"label": "female",
+"rms": 0.0057
+},
+{
+"scene_t": 73.2,
+"abs_t": 1543.2,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 73.6,
+"abs_t": 1543.6,
+"label": "female",
+"rms": 0.005
+},
+{
+"scene_t": 74.0,
+"abs_t": 1544.0,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 74.4,
+"abs_t": 1544.4,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 74.8,
+"abs_t": 1544.8,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 75.2,
+"abs_t": 1545.2,
+"label": "male",
+"rms": 0.0029
+},
+{
+"scene_t": 75.6,
+"abs_t": 1545.6,
+"label": "female",
+"rms": 0.0017
+},
+{
+"scene_t": 76.0,
+"abs_t": 1546.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 76.4,
+"abs_t": 1546.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 76.8,
+"abs_t": 1546.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 77.2,
+"abs_t": 1547.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 77.6,
+"abs_t": 1547.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 78.0,
+"abs_t": 1548.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 78.4,
+"abs_t": 1548.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 78.8,
+"abs_t": 1548.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 79.2,
+"abs_t": 1549.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 79.6,
+"abs_t": 1549.6,
+"label": "female",
+"rms": 0.0027
+},
+{
+"scene_t": 80.0,
+"abs_t": 1550.0,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 80.4,
+"abs_t": 1550.4,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 80.8,
+"abs_t": 1550.8,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 81.2,
+"abs_t": 1551.2,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 81.6,
+"abs_t": 1551.6,
+"label": "female",
+"rms": 0.0057
+},
+{
+"scene_t": 82.0,
+"abs_t": 1552.0,
+"label": "female",
+"rms": 0.0061
+},
+{
+"scene_t": 82.4,
+"abs_t": 1552.4,
+"label": "female",
+"rms": 0.0058
+},
+{
+"scene_t": 82.8,
+"abs_t": 1552.8,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 83.2,
+"abs_t": 1553.2,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 83.6,
+"abs_t": 1553.6,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 84.0,
+"abs_t": 1554.0,
+"label": "female",
+"rms": 0.0051
+},
+{
+"scene_t": 84.4,
+"abs_t": 1554.4,
+"label": "female",
+"rms": 0.0052
+},
+{
+"scene_t": 84.8,
+"abs_t": 1554.8,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 85.2,
+"abs_t": 1555.2,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 85.6,
+"abs_t": 1555.6,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 86.0,
+"abs_t": 1556.0,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 86.4,
+"abs_t": 1556.4,
+"label": "female",
+"rms": 0.0045
+},
+{
+"scene_t": 86.8,
+"abs_t": 1556.8,
+"label": "female",
+"rms": 0.0035
+},
+{
+"scene_t": 87.2,
+"abs_t": 1557.2,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 87.6,
+"abs_t": 1557.6,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 88.0,
+"abs_t": 1558.0,
+"label": "female",
+"rms": 0.0057
+},
+{
+"scene_t": 88.4,
+"abs_t": 1558.4,
+"label": "female",
+"rms": 0.0058
+},
+{
+"scene_t": 88.8,
+"abs_t": 1558.8,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 89.2,
+"abs_t": 1559.2,
+"label": "female",
+"rms": 0.0042
+},
+{
+"scene_t": 89.6,
+"abs_t": 1559.6,
+"label": "female",
+"rms": 0.0035
+},
+{
+"scene_t": 90.0,
+"abs_t": 1560.0,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 90.4,
+"abs_t": 1560.4,
+"label": "female",
+"rms": 0.0049
+},
+{
+"scene_t": 90.8,
+"abs_t": 1560.8,
+"label": "female",
+"rms": 0.0043
+},
+{
+"scene_t": 91.2,
+"abs_t": 1561.2,
+"label": "female",
+"rms": 0.004
+},
+{
+"scene_t": 91.6,
+"abs_t": 1561.6,
+"label": "female",
+"rms": 0.0034
+},
+{
+"scene_t": 92.0,
+"abs_t": 1562.0,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 92.4,
+"abs_t": 1562.4,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 92.8,
+"abs_t": 1562.8,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 93.2,
+"abs_t": 1563.2,
+"label": "silence",
+"rms": 0.0005
+},
+{
+"scene_t": 93.6,
+"abs_t": 1563.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 94.0,
+"abs_t": 1564.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 94.4,
+"abs_t": 1564.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 94.8,
+"abs_t": 1564.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 95.2,
+"abs_t": 1565.2,
+"label": "male",
+"rms": 0.0019
+},
+{
+"scene_t": 95.6,
+"abs_t": 1565.6,
+"label": "male",
+"rms": 0.0019
+},
+{
+"scene_t": 96.0,
+"abs_t": 1566.0,
+"label": "male",
+"rms": 0.0019
+},
+{
+"scene_t": 96.4,
+"abs_t": 1566.4,
+"label": "male",
+"rms": 0.0019
+},
+{
+"scene_t": 96.8,
+"abs_t": 1566.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 97.2,
+"abs_t": 1567.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 97.6,
+"abs_t": 1567.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 98.0,
+"abs_t": 1568.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 98.4,
+"abs_t": 1568.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 98.8,
+"abs_t": 1568.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 99.2,
+"abs_t": 1569.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 99.6,
+"abs_t": 1569.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 100.0,
+"abs_t": 1570.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 100.4,
+"abs_t": 1570.4,
+"label": "male",
+"rms": 0.0017
+},
+{
+"scene_t": 100.8,
+"abs_t": 1570.8,
+"label": "male",
+"rms": 0.0017
+},
+{
+"scene_t": 101.2,
+"abs_t": 1571.2,
+"label": "male",
+"rms": 0.0017
+},
+{
+"scene_t": 101.6,
+"abs_t": 1571.6,
+"label": "male",
+"rms": 0.0017
+},
+{
+"scene_t": 102.0,
+"abs_t": 1572.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 102.4,
+"abs_t": 1572.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 102.8,
+"abs_t": 1572.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 103.2,
+"abs_t": 1573.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 103.6,
+"abs_t": 1573.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 104.0,
+"abs_t": 1574.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 104.4,
+"abs_t": 1574.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 104.8,
+"abs_t": 1574.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 105.2,
+"abs_t": 1575.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 105.6,
+"abs_t": 1575.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 106.0,
+"abs_t": 1576.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 106.4,
+"abs_t": 1576.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 106.8,
+"abs_t": 1576.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 107.2,
+"abs_t": 1577.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 107.6,
+"abs_t": 1577.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 108.0,
+"abs_t": 1578.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 108.4,
+"abs_t": 1578.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 108.8,
+"abs_t": 1578.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 109.2,
+"abs_t": 1579.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 109.6,
+"abs_t": 1579.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 110.0,
+"abs_t": 1580.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 110.4,
+"abs_t": 1580.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 110.8,
+"abs_t": 1580.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 111.2,
+"abs_t": 1581.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 111.6,
+"abs_t": 1581.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 112.0,
+"abs_t": 1582.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 112.4,
+"abs_t": 1582.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 112.8,
+"abs_t": 1582.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 113.2,
+"abs_t": 1583.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 113.6,
+"abs_t": 1583.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 114.0,
+"abs_t": 1584.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 114.4,
+"abs_t": 1584.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 114.8,
+"abs_t": 1584.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 115.2,
+"abs_t": 1585.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 115.6,
+"abs_t": 1585.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 116.0,
+"abs_t": 1586.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 116.4,
+"abs_t": 1586.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 116.8,
+"abs_t": 1586.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 117.2,
+"abs_t": 1587.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 117.6,
+"abs_t": 1587.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 118.0,
+"abs_t": 1588.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 118.4,
+"abs_t": 1588.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 118.8,
+"abs_t": 1588.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 119.2,
+"abs_t": 1589.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 119.6,
+"abs_t": 1589.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 120.0,
+"abs_t": 1590.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 120.4,
+"abs_t": 1590.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 120.8,
+"abs_t": 1590.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 121.2,
+"abs_t": 1591.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 121.6,
+"abs_t": 1591.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 122.0,
+"abs_t": 1592.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 122.4,
+"abs_t": 1592.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 122.8,
+"abs_t": 1592.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 123.2,
+"abs_t": 1593.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 123.6,
+"abs_t": 1593.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 124.0,
+"abs_t": 1594.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 124.4,
+"abs_t": 1594.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 124.8,
+"abs_t": 1594.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 125.2,
+"abs_t": 1595.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 125.6,
+"abs_t": 1595.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 126.0,
+"abs_t": 1596.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 126.4,
+"abs_t": 1596.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 126.8,
+"abs_t": 1596.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 127.2,
+"abs_t": 1597.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 127.6,
+"abs_t": 1597.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 128.0,
+"abs_t": 1598.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 128.4,
+"abs_t": 1598.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 128.8,
+"abs_t": 1598.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 129.2,
+"abs_t": 1599.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 129.6,
+"abs_t": 1599.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 130.0,
+"abs_t": 1600.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 130.4,
+"abs_t": 1600.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 130.8,
+"abs_t": 1600.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 131.2,
+"abs_t": 1601.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 131.6,
+"abs_t": 1601.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 132.0,
+"abs_t": 1602.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 132.4,
+"abs_t": 1602.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 132.8,
+"abs_t": 1602.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 133.2,
+"abs_t": 1603.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 133.6,
+"abs_t": 1603.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 134.0,
+"abs_t": 1604.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 134.4,
+"abs_t": 1604.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 134.8,
+"abs_t": 1604.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 135.2,
+"abs_t": 1605.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 135.6,
+"abs_t": 1605.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 136.0,
+"abs_t": 1606.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 136.4,
+"abs_t": 1606.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 136.8,
+"abs_t": 1606.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 137.2,
+"abs_t": 1607.2,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 137.6,
+"abs_t": 1607.6,
+"label": "female",
+"rms": 0.0023
+},
+{
+"scene_t": 138.0,
+"abs_t": 1608.0,
+"label": "female",
+"rms": 0.0025
+},
+{
+"scene_t": 138.4,
+"abs_t": 1608.4,
+"label": "female",
+"rms": 0.0038
+},
+{
+"scene_t": 138.8,
+"abs_t": 1608.8,
+"label": "female",
+"rms": 0.0042
+},
+{
+"scene_t": 139.2,
+"abs_t": 1609.2,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 139.6,
+"abs_t": 1609.6,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 140.0,
+"abs_t": 1610.0,
+"label": "female",
+"rms": 0.0039
+},
+{
+"scene_t": 140.4,
+"abs_t": 1610.4,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 140.8,
+"abs_t": 1610.8,
+"label": "female",
+"rms": 0.0047
+},
+{
+"scene_t": 141.2,
+"abs_t": 1611.2,
+"label": "female",
+"rms": 0.0048
+},
+{
+"scene_t": 141.6,
+"abs_t": 1611.6,
+"label": "female",
+"rms": 0.0046
+},
+{
+"scene_t": 142.0,
+"abs_t": 1612.0,
+"label": "female",
+"rms": 0.0031
+},
+{
+"scene_t": 142.4,
+"abs_t": 1612.4,
+"label": "female",
+"rms": 0.0028
+},
+{
+"scene_t": 142.8,
+"abs_t": 1612.8,
+"label": "female",
+"rms": 0.0024
+},
+{
+"scene_t": 143.2,
+"abs_t": 1613.2,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 143.6,
+"abs_t": 1613.6,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 144.0,
+"abs_t": 1614.0,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 144.4,
+"abs_t": 1614.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 144.8,
+"abs_t": 1614.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 145.2,
+"abs_t": 1615.2,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 145.6,
+"abs_t": 1615.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 146.0,
+"abs_t": 1616.0,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 146.4,
+"abs_t": 1616.4,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 146.8,
+"abs_t": 1616.8,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 147.2,
+"abs_t": 1617.2,
+"label": "silence",
+"rms": 0.0007
+},
+{
+"scene_t": 147.6,
+"abs_t": 1617.6,
+"label": "silence",
+"rms": 0.0003
+},
+{
+"scene_t": 148.0,
+"abs_t": 1618.0,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 148.4,
+"abs_t": 1618.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 148.8,
+"abs_t": 1618.8,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 149.2,
+"abs_t": 1619.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 149.6,
+"abs_t": 1619.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 150.0,
+"abs_t": 1620.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 150.4,
+"abs_t": 1620.4,
+"label": "silence",
+"rms": 0.0009
+},
+{
+"scene_t": 150.8,
+"abs_t": 1620.8,
+"label": "female",
+"rms": 0.002
+},
+{
+"scene_t": 151.2,
+"abs_t": 1621.2,
+"label": "female",
+"rms": 0.0025
+},
+{
+"scene_t": 151.6,
+"abs_t": 1621.6,
+"label": "female",
+"rms": 0.0028
+},
+{
+"scene_t": 152.0,
+"abs_t": 1622.0,
+"label": "female",
+"rms": 0.0027
+},
+{
+"scene_t": 152.4,
+"abs_t": 1622.4,
+"label": "female",
+"rms": 0.0019
+},
+{
+"scene_t": 152.8,
+"abs_t": 1622.8,
+"label": "silence",
+"rms": 0.0013
+},
+{
+"scene_t": 153.2,
+"abs_t": 1623.2,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 153.6,
+"abs_t": 1623.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 154.0,
+"abs_t": 1624.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 154.4,
+"abs_t": 1624.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 154.8,
+"abs_t": 1624.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 155.2,
+"abs_t": 1625.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 155.6,
+"abs_t": 1625.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 156.0,
+"abs_t": 1626.0,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 156.4,
+"abs_t": 1626.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 156.8,
+"abs_t": 1626.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 157.2,
+"abs_t": 1627.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 157.6,
+"abs_t": 1627.6,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 158.0,
+"abs_t": 1628.0,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 158.4,
+"abs_t": 1628.4,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 158.8,
+"abs_t": 1628.8,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 159.2,
+"abs_t": 1629.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 159.6,
+"abs_t": 1629.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 160.0,
+"abs_t": 1630.0,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 160.4,
+"abs_t": 1630.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 160.8,
+"abs_t": 1630.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 161.2,
+"abs_t": 1631.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 161.6,
+"abs_t": 1631.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 162.0,
+"abs_t": 1632.0,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 162.4,
+"abs_t": 1632.4,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 162.8,
+"abs_t": 1632.8,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 163.2,
+"abs_t": 1633.2,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 163.6,
+"abs_t": 1633.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 164.0,
+"abs_t": 1634.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 164.4,
+"abs_t": 1634.4,
+"label": "silence",
+"rms": 0.0008
+},
+{
+"scene_t": 164.8,
+"abs_t": 1634.8,
+"label": "silence",
+"rms": 0.0009
+},
+{
+"scene_t": 165.2,
+"abs_t": 1635.2,
+"label": "silence",
+"rms": 0.0009
+},
+{
+"scene_t": 165.6,
+"abs_t": 1635.6,
+"label": "silence",
+"rms": 0.0009
+},
+{
+"scene_t": 166.0,
+"abs_t": 1636.0,
+"label": "silence",
+"rms": 0.0004
+},
+{
+"scene_t": 166.4,
+"abs_t": 1636.4,
+"label": "silence",
+"rms": 0.0003
+},
+{
+"scene_t": 166.8,
+"abs_t": 1636.8,
+"label": "silence",
+"rms": 0.0004
+},
+{
+"scene_t": 167.2,
+"abs_t": 1637.2,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 167.6,
+"abs_t": 1637.6,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 168.0,
+"abs_t": 1638.0,
+"label": "silence",
+"rms": 0.0006
+},
+{
+"scene_t": 168.4,
+"abs_t": 1638.4,
+"label": "silence",
+"rms": 0.0005
+},
+{
+"scene_t": 168.8,
+"abs_t": 1638.8,
+"label": "silence",
+"rms": 0.0003
+},
+{
+"scene_t": 169.2,
+"abs_t": 1639.2,
+"label": "silence",
+"rms": 0.0002
+},
+{
+"scene_t": 169.6,
+"abs_t": 1639.6,
+"label": "silence",
+"rms": 0.0001
+},
+{
+"scene_t": 170.0,
+"abs_t": 1640.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 170.4,
+"abs_t": 1640.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 170.8,
+"abs_t": 1640.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 171.2,
+"abs_t": 1641.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 171.6,
+"abs_t": 1641.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 172.0,
+"abs_t": 1642.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 172.4,
+"abs_t": 1642.4,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 172.8,
+"abs_t": 1642.8,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 173.2,
+"abs_t": 1643.2,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 173.6,
+"abs_t": 1643.6,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 174.0,
+"abs_t": 1644.0,
+"label": "silence",
+"rms": 0.0
+},
+{
+"scene_t": 174.4,
+"abs_t": 1644.4,
+"label": "male",
+"rms": 0.0021
+},
+{
+"scene_t": 174.8,
+"abs_t": 1644.8,
+"label": "male",
+"rms": 0.0031
+},
+{
+"scene_t": 175.2,
+"abs_t": 1645.2,
+"label": "male",
+"rms": 0.0035
+},
+{
+"scene_t": 175.6,
+"abs_t": 1645.6,
+"label": "male",
+"rms": 0.0035
+},
+{
+"scene_t": 176.0,
+"abs_t": 1646.0,
+"label": "male",
+"rms": 0.0041
+},
+{
+"scene_t": 176.4,
+"abs_t": 1646.4,
+"label": "male",
+"rms": 0.0036
+},
+{
+"scene_t": 176.8,
+"abs_t": 1646.8,
+"label": "male",
+"rms": 0.0038
+},
+{
+"scene_t": 177.2,
+"abs_t": 1647.2,
+"label": "male",
+"rms": 0.0053
+},
+{
+"scene_t": 177.6,
+"abs_t": 1647.6,
+"label": "male",
+"rms": 0.005
+},
+{
+"scene_t": 178.0,
+"abs_t": 1648.0,
+"label": "male",
+"rms": 0.0049
+},
+{
+"scene_t": 178.4,
+"abs_t": 1648.4,
+"label": "female",
+"rms": 0.0053
+},
+{
+"scene_t": 178.8,
+"abs_t": 1648.8,
+"label": "female",
+"rms": 0.0049
+}
+]
