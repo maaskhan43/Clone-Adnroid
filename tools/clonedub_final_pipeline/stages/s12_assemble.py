@@ -27,9 +27,13 @@ for L in sorted(D["lines"], key=lambda x: x["abs_start"]):
             a = a.mean(1)
         a = to_sr(a, sr, SR)
     s = int(round((L["abs_start"] - T0) * SR))
+    if s < 0 or s >= len(tl):      # line starts outside scene window
+        continue
     e = s + len(a)
     if e > len(tl):
         a = a[:len(tl) - s]; e = len(tl)
+    if len(a) == 0:
+        continue
     tl[s:e] += a
 tl = tl[:int(SCENE * SR)]
 voice = tl * (0.75 / (np.abs(tl).max() + 1e-9))

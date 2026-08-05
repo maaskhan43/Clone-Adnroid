@@ -175,6 +175,9 @@ for name in used:
     if best:
         a0 = best["abs_start"]; a1 = min(best["abs_end"], a0 + 11)
         a, sr = read_slice(CFG["vocals"], a0, a1)
+        if snr_db(a, sr) < 20:   # noisy solo = pachka trap -> prefer own lines
+            best = None
+    if best:
         src = "solo-clip %.1f-%.1f" % (a0, a1)
         ws = [w["word"] for seg in A["segments"] for w in seg["words"]
               if a0 - 0.2 <= w["abs_start"] <= a1 + 0.2]

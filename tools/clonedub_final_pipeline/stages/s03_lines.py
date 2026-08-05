@@ -72,6 +72,7 @@ for u in turns:
 lines.sort(key=lambda L: L["abs_start"])
 for L in lines:
     L["dur"] = round(L["abs_end"] - L["abs_start"], 2)
+lines = [L for L in lines if L["dur"] >= 0.2]   # whisper jitter: zero-length words
 json.dump({"lines": lines}, open(wpath("wordlines.json"), "w", encoding="utf-8"),
           indent=1, ensure_ascii=False)
 print("lines=%d" % len(lines))

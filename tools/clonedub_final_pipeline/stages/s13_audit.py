@@ -21,11 +21,13 @@ fails = []
 
 # 1) gender probe per line (>=1.2s lines only — classifier unreliable below)
 for L in D["lines"]:
-    if L["dur"] < 1.2:
+    if L["dur"] < 1.2 or L.get("original_audio"):   # original slices are verbatim source
         continue
     s0 = L["abs_start"] - T0
     s1 = min(L["abs_end"] - T0 + 0.2, T1 - T0)
     seg = a[int(s0 * sr):int(s1 * sr)]
+    if len(seg) < sr // 4:      # line at/beyond scene edge — unverifiable
+        continue
     rms = float(np.sqrt(np.mean(seg**2)))
     if rms < 0.02:
         fails.append("V%02d SILENT (rms=%.3f)" % (L["vid"], rms))
@@ -56,8 +58,10 @@ pct = 100.0 * cov / max(len(words), 1)
 if pct < 95:
     fails.append("word coverage %.1f%% < 95%%" % pct)
 
-# 4) CER gate
-badcer = [(int(v), p["cer"]) for v, p in picks.items() if p["cer"] is not None and p["cer"] > 40]
+# 4) CER gate — only for lines >=1.2s (whisper CER unreliable on tiny clips)
+durs = {L["vid"]: L["dur"] for L in D["lines"]}
+badcer = [(int(v), p["cer"]) for v, p in picks.items()
+          if p["cer"] is not None and p["cer"] > 40 and durs.get(int(v), 0) >= 1.2]
 for vid, c in badcer:
     fails.append("V%02d CER %.1f > 40" % (vid, c))
 

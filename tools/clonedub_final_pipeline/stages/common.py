@@ -22,6 +22,8 @@ def read_slice(path, a0, a1, mono=True):
 
 
 def to_sr(a, sr, target):
+    if len(a) == 0:
+        return np.zeros(1, dtype=np.float32)
     if sr == target:
         return a
     n = int(len(a) * target / sr)

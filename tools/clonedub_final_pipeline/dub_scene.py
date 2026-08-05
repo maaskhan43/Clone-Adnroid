@@ -33,7 +33,7 @@ STAGES = [
     ("lines",      "s03_lines.py",     "sonitr",    ["wordlines.json"]),
     ("gender",     "s04_gender.py",    "indicf5",   ["gender.json"]),
     ("actors",     "s05_actors.py",    "chatterbox",["actors.json"]),
-    ("translate",  "s06_translate_gate.py", "system", ["lines_final.json"]),
+    ("translate",  "s06_translate_gate.py", "indicf5", ["lines_final.json"]),
     ("clean_gen",  "s07_clean_gen.py", "indicf5",   ["gen_clean/.written"]),
     ("clean_cer",  "s08_clean_cer.py", "sonitr",    ["clean_best.json"]),
     ("vc",         "s09_vc.py",        "seedvc",    ["gen_vc/.written"]),
