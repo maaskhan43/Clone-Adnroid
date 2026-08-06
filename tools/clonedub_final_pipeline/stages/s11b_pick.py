@@ -12,6 +12,15 @@ cmap = {(c["pool"], c["vid"], c["cand"]): c["cer"] for c in CERJ}
 lines = {L["vid"]: L for L in D["lines"]}
 
 pred = torch.hub.load("tarepan/SpeechMOS:v1.2.0", "utmos22_strong", trust_repo=True)
+sys.path.insert(0, "/mnt/d/CloneDub/voice_gender_clf")
+from model import ECAPA_gender
+_g = ECAPA_gender.from_pretrained("JaesungHuh/voice-gender-classifier"); _g.eval()
+def gender_of(a, sr):
+    x = to_sr(a if a.ndim == 1 else a.mean(1), sr, 16000)
+    x = x / (np.max(np.abs(x)) + 1e-9) * 0.9
+    sf.write("/tmp/_jg.wav", x.astype(np.float32), 16000)
+    with torch.no_grad():
+        return _g.predict("/tmp/_jg.wav", device="cpu")
 enc = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
                                      savedir="/mnt/d/CloneDub/hf_cache/ecapa_sb",
                                      run_opts={"device": "cpu"})
@@ -42,6 +51,8 @@ def consider(pool, vid, cand, fn):
         u = float(pred(torch.from_numpy(a).unsqueeze(0), sr))
     sim = float(np.dot(emb(a, sr), refemb[lines[vid]["actor"]]))
     comp = -cerv + 15 * sim + 4 * u
+    if len(a) / sr >= 1.2 and gender_of(a, sr) != lines[vid]["gender"]:
+        comp -= 40   # wrong-gender clone: heavy penalty
     print("%s V%02d c%s cer=%.1f sim=%.2f utmos=%.2f comp=%.1f" % (pool, vid, cand, cerv, sim, u, comp), flush=True)
     if vid not in picks or comp > picks[vid]["comp"]:
         picks[vid] = {"pool": pool, "cand": cand, "file": fn, "cer": cerv,

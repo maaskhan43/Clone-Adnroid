@@ -118,8 +118,14 @@ reg_dir = CFG.get("actor_registry")
 reg = {}
 if reg_dir:
     os.makedirs(reg_dir, exist_ok=True)
+    rp2 = os.path.join(reg_dir, "registry_v2.json")
     rp = os.path.join(reg_dir, "registry.json")
-    if os.path.exists(rp):
+    if os.path.exists(rp2):     # v2: multi-fingerprint global map
+        v2 = json.load(open(rp2))["actors"]
+        for gname, g in v2.items():
+            reg[g.get("alias", gname)] = {"gender": g["gender"], "centroids": g["centroids"],
+                                          "ref_wav": g["ref_wav"], "ref_txt": g["ref_txt"]}
+    elif os.path.exists(rp):
         reg = json.load(open(rp))
 rename = {}
 for name, ct in cents.items():
@@ -127,7 +133,10 @@ for name, ct in cents.items():
     for rname, r in reg.items():
         if r["gender"] != ct["gender"]:
             continue
-        v = float(np.dot(np.array(r["centroid"]), ct["emb"]))
+        if "centroids" in r:   # v2: max-sim over fingerprint set, threshold 0.5
+            v = max(float(np.dot(np.array(c), ct["emb"])) for c in r["centroids"]) - 0.1
+        else:
+            v = float(np.dot(np.array(r["centroid"]), ct["emb"]))
         if v > bestv:
             bestv, bestn = v, rname
     if bestn:
