@@ -17,7 +17,8 @@ REG = "/mnt/d/CloneDub/work/video1_actors"
 VOX = "/mnt/d/CloneDub/work/video1_meteor_video_clone/demucs/htdemucs/full/vocals.wav"
 SEG = "/mnt/d/CloneDub/work/video1_meteor_video_clone/segments_diarized.json"
 turns = json.load(open(REG + "/global_turns.json"))["turns"]
-words = [(w["start"], w["end"]) for s in json.load(open(SEG))["segments"] for w in s.get("words", [])]
+words = [(w["start"], w["end"]) for s in json.load(open(SEG))["segments"]
+         for w in s.get("words", []) if "start" in w and "end" in w]
 
 info = sf.info(VOX); sr = info.samplerate
 enc = EncoderClassifier.from_hparams(source="speechbrain/spkrec-ecapa-voxceleb",
@@ -86,10 +87,16 @@ for spk, clips in sorted(solo.items(), key=lambda kv: -sum(c["d"] for c in kv[1]
     best = max(clips, key=lambda c: 2 * min(c["d"], 11) + c["snr"])
     a0, a1 = best["a0"], min(best["a1"], best["a0"] + 11)
     x = read(a0, a1)
-    # gender from the ref clip
-    sf.write("/tmp/gsm/g.wav", to16k(x / (np.max(np.abs(x)) + 1e-9) * 0.9), 16000)
-    with torch.no_grad():
-        gender = gcl.predict("/tmp/gsm/g.wav", device="cpu")
+    # gender: MAJORITY VOTE over up to 5 diverse clips (robust for soft voices)
+    votes = []
+    for c in clips_sorted[::max(1, len(clips_sorted)//5)][:5]:
+        xv = read(c["a0"], min(c["a1"], c["a0"] + 6))
+        sf.write("/tmp/gsm/g.wav", to16k(xv / (np.max(np.abs(xv)) + 1e-9) * 0.9), 16000)
+        with torch.no_grad():
+            votes.append(gcl.predict("/tmp/gsm/g.wav", device="cpu"))
+    gender = max(set(votes), key=votes.count)
+    if votes.count(gender) < len(votes):
+        print("  %s gender votes: %s -> %s" % (spk, votes, gender), flush=True)
     xr = x / (np.max(np.abs(x)) + 1e-9) * 0.85
     xr = np.concatenate([xr, np.zeros(int(0.35 * sr), dtype=np.float32)])
     wavp = REG + "/ref_%s.wav" % spk
@@ -97,7 +104,7 @@ for spk, clips in sorted(solo.items(), key=lambda kv: -sum(c["d"] for c in kv[1]
     # transcript from full-movie words in ref span
     seg = json.load(open(SEG))
     ws = [w["word"] for s in seg["segments"] for w in s.get("words", [])
-          if a0 - 0.2 <= w["start"] <= a1 + 0.2]
+          if "start" in w and a0 - 0.2 <= w["start"] <= a1 + 0.2]
     open(REG + "/ref_%s.txt" % spk, "w", encoding="utf-8").write("".join(ws).strip())
     reg2[spk] = {"gender": gender, "centroids": fps, "total_s": round(total, 1),
                  "ref_wav": wavp, "ref_txt": REG + "/ref_%s.txt" % spk,

@@ -125,6 +125,10 @@ if reg_dir:
         for gname, g in v2.items():
             reg[g.get("alias", gname)] = {"gender": g["gender"], "centroids": g["centroids"],
                                           "ref_wav": g["ref_wav"], "ref_txt": g["ref_txt"]}
+        if os.path.exists(rp):   # merge v1 actors missing from v2 (e.g. quiet male lead)
+            for oname, o in json.load(open(rp)).items():
+                if oname not in reg and o.get("centroid"):
+                    reg[oname] = o
     elif os.path.exists(rp):
         reg = json.load(open(rp))
 rename = {}
