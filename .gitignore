@@ -28,5 +28,7 @@ V10_PLAN.md
 # Stray artifacts
 =4.0,
 
-# Dubbing helper scripts (separate project)
-tools/
+# Dubbing helper scripts (separate project), except tracked CloneDub V11/V12 tools
+tools/*
+!tools/clonedub_v11_*.py
+!tools/v12_*.py
